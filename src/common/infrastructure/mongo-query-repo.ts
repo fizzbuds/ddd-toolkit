@@ -1,18 +1,24 @@
 import { Collection, CreateIndexesOptions, Document, IndexDirection, IndexSpecification, MongoClient } from 'mongodb';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { isEmpty } from 'lodash';
 
 type IndexType<T> = {
     [key in keyof T]?: IndexDirection;
 };
 
-@Injectable()
-export abstract class MongoQueryRepo<RM extends Document> implements OnModuleInit {
-    private logger = new Logger(this.constructor.name);
+interface Logger {
+    log: (message: string) => void;
+    error: (message: string) => void;
+}
+
+export abstract class MongoQueryRepo<RM extends Document> {
     protected readonly collection: Collection<RM>;
     protected abstract readonly indexes: { indexSpec: IndexType<RM>; options?: CreateIndexesOptions }[];
 
-    constructor(mongoClient: MongoClient, private readonly collectionName: string) {
+    protected constructor(
+        mongoClient: MongoClient,
+        private readonly collectionName: string,
+        private readonly logger: Logger = console,
+    ) {
         // TODO wrap collection with a proxy to log all queries
         this.collection = mongoClient.db().collection(this.collectionName);
     }

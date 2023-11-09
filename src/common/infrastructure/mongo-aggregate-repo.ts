@@ -1,6 +1,5 @@
 import { IRepoHooks } from './repo-hooks';
 import { Collection, Document, MongoClient } from 'mongodb';
-import { OnModuleInit } from '@nestjs/common';
 import { GenericId } from './generic-id';
 import { ISerializer } from './serializer.interface';
 import { merge } from 'lodash';
@@ -20,7 +19,7 @@ type WithOptionalVersion<T> = T & { __version?: number };
 // TODO probably we should create a dedicated interface wiht like DocumentWithIdAndTimestamps
 const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
 
-export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A>, OnModuleInit {
+export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A> {
     private collection: Collection<AM>;
 
     constructor(

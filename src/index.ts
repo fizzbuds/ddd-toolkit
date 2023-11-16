@@ -4,3 +4,4 @@ export * from './infrastructure/repo-hooks';
 export * from './infrastructure/generic-id';
 export { OptimisticLockError } from './infrastructure/errors';
 export { DuplicatedIdError } from './infrastructure/errors';
+export * from './infrastructure/mongo-query-repo';

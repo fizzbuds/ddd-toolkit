@@ -1,15 +1,17 @@
 {
-    "name": "ddd-toolkit",
+    "name": "@fizzbuds/ddd-toolkit",
     "version": "0.0.1",
     "description": "",
     "author": "",
     "private": false,
     "license": "UNLICENSED",
+    "main": "dist/index",
     "scripts": {
         "build": "tsc",
         "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
         "test": "jest",
-        "prepare": "husky install"
+        "prepare": "husky install",
+        "prepublishOnly": "build"
     },
     "dependencies": {
         "lodash": "^4.17.21",

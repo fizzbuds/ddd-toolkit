@@ -1,4 +1,4 @@
 export interface ISerializer<A, AM> {
-    aggregateToAggregateModel: (aggregate: A) => AM;
-    aggregateModelToAggregate: (aggregateModel: AM) => A;
+    aggregateToModel: (aggregate: A) => AM;
+    modelToAggregate: (aggregateModel: AM) => A;
 }

@@ -1,12 +1,13 @@
 import { IRepoHooks } from './repo-hooks';
-import { Collection, Document, MongoClient } from 'mongodb';
-import { GenericId } from './generic-id';
+import { Document } from 'mongodb';
 import { ISerializer } from './serializer.interface';
 import { merge } from 'lodash';
 import { DuplicatedIdError, OptimisticLockError, RepoHookError } from './errors';
+import { ICollection, IMongoClient } from './mongo-client.interface';
 
 export interface IAggregateRepo<A> {
-    getById: (id: GenericId) => Promise<WithVersion<A> | null>;
+    // TODO add id as a generic type
+    getById: (id: string) => Promise<WithVersion<A> | null>;
     save: (aggregate: A) => Promise<void>;
 }
 
@@ -17,14 +18,14 @@ export type WithVersion<T> = T & { __version: number };
 type WithOptionalVersion<T> = T & { __version?: number };
 
 // TODO probably we should create a dedicated interface wiht like DocumentWithIdAndTimestamps
-const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
+export const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
 
 export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A> {
-    private collection: Collection<AM>;
+    private collection: ICollection<AM>;
 
     constructor(
         private readonly serializer: ISerializer<A, AM>,
-        private readonly mongoClient: MongoClient,
+        private readonly mongoClient: IMongoClient,
         private readonly collectionName: string,
         private readonly repoHooks?: IRepoHooks<A>,
     ) {
@@ -36,7 +37,7 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
     }
 
     async save(aggregate: WithOptionalVersion<A>) {
-        const aggregateModel = this.serializer.aggregateToAggregateModel(aggregate);
+        const aggregateModel = this.serializer.aggregateToModel(aggregate);
         const aggregateVersion = aggregate.__version || 0;
 
         const session = this.mongoClient.startSession();
@@ -84,10 +85,10 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
     }
 
     // TODO evaluate to implement getOrThrow
-    async getById(id: GenericId): Promise<WithVersion<A> | null> {
-        const aggregateModel = await this.collection.findOne({ id: id.toString() } as any);
+    async getById(id: string): Promise<WithVersion<A> | null> {
+        const aggregateModel = await this.collection.findOne({ id: id } as any);
         if (!aggregateModel) return null;
-        const aggregate = this.serializer.aggregateModelToAggregate(aggregateModel as AM);
+        const aggregate = this.serializer.modelToAggregate(aggregateModel as AM);
         return merge<A, { __version: number }>(aggregate, { __version: aggregateModel.__version });
     }
 }

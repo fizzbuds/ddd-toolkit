@@ -1,9 +1,5 @@
-import { Collection, CreateIndexesOptions, Document, IndexDirection, IndexSpecification, MongoClient } from 'mongodb';
+import { Collection, CreateIndexesOptions, Document, IndexSpecification, MongoClient } from 'mongodb';
 import { isEmpty } from 'lodash';
-
-type IndexType<T> = {
-    [key in keyof T]?: IndexDirection;
-};
 
 interface Logger {
     log: (message: string) => void;
@@ -12,7 +8,7 @@ interface Logger {
 
 export abstract class MongoQueryRepo<RM extends Document> {
     protected readonly collection: Collection<RM>;
-    protected abstract readonly indexes: { indexSpec: IndexType<RM>; options?: CreateIndexesOptions }[];
+    protected abstract readonly indexes: { indexSpec: IndexSpecification; options: CreateIndexesOptions }[];
 
     protected constructor(
         mongoClient: MongoClient,
@@ -29,7 +25,7 @@ export abstract class MongoQueryRepo<RM extends Document> {
         if (!isEmpty(this.indexes)) {
             for (const { indexSpec, options } of this.indexes) {
                 this.logger.log(`Creating index for ${JSON.stringify(indexSpec)} field.`);
-                await this.collection.createIndex(indexSpec as IndexSpecification, options);
+                await this.collection.createIndex(indexSpec, options);
             }
         }
     }

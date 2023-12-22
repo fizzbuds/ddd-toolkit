@@ -15,8 +15,10 @@
   },
   "dependencies": {
     "lodash": "^4.17.21",
-    "mongodb": "^5.6.0",
     "uuid": "^9.0.0"
+  },
+  "peerDependencies": {
+    "mongodb": "^4.9.0 || ^5.9.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.17",

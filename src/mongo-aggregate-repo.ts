@@ -1,9 +1,8 @@
 import { IRepoHooks } from './repo-hooks';
-import { Document } from 'mongodb';
+import { Collection, Document, MongoClient } from 'mongodb';
 import { ISerializer } from './serializer.interface';
 import { merge } from 'lodash';
 import { DuplicatedIdError, OptimisticLockError, RepoHookError } from './errors';
-import { ICollection, IMongoClient } from './mongo-client.interface';
 
 export interface IAggregateRepo<A> {
     // TODO add id as a generic type
@@ -21,11 +20,11 @@ type WithOptionalVersion<T> = T & { __version?: number };
 export const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
 
 export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A> {
-    private collection: ICollection<AM>;
+    private collection: Collection<AM>;
 
     constructor(
         private readonly serializer: ISerializer<A, AM>,
-        private readonly mongoClient: IMongoClient,
+        private readonly mongoClient: MongoClient,
         private readonly collectionName: string,
         private readonly repoHooks?: IRepoHooks<A>,
     ) {

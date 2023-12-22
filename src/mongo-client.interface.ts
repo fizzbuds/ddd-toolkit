@@ -1,3 +1,4 @@
+// REMOVE ME
 export interface IMongoClient {
     db: () => {
         collection: <T>(name: string) => ICollection<T>;

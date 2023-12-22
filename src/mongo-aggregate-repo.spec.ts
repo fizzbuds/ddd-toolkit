@@ -1,19 +1,19 @@
 import { MongoAggregateRepo } from './mongo-aggregate-repo';
 import { ISerializer } from './serializer.interface';
 import 'jest';
-import { IMongoClient } from './mongo-client.interface';
+import { MongoClient } from 'mongodb';
 
 const serializerMock: ISerializer<any, any> = {
     modelToAggregate: jest.fn(),
     aggregateToModel: jest.fn().mockReturnValue({ id: 'id' }),
 };
 
-const mongoClientMock: IMongoClient = {
+const mongoClientMock = {
     db: () => ({
         collection: () => collectionMock,
     }),
-    startSession: () => sessionMock,
-};
+    startSession: (): any => sessionMock,
+} as any as MongoClient;
 
 const collectionMock = {
     createIndex: jest.fn(),

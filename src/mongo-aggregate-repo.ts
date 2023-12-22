@@ -17,16 +17,16 @@ export type WithVersion<T> = T & { __version: number };
 type WithOptionalVersion<T> = T & { __version?: number };
 
 // TODO probably we should create a dedicated interface wiht like DocumentWithIdAndTimestamps
-export const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
+const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
 
 export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A> {
-    private collection: Collection<AM>;
+    protected collection: Collection<AM>;
 
     constructor(
-        private readonly serializer: ISerializer<A, AM>,
-        private readonly mongoClient: MongoClient,
-        private readonly collectionName: string,
-        private readonly repoHooks?: IRepoHooks<A>,
+        protected readonly serializer: ISerializer<A, AM>,
+        protected readonly mongoClient: MongoClient,
+        protected readonly collectionName: string,
+        protected readonly repoHooks?: IRepoHooks<AM>,
     ) {
         this.collection = this.mongoClient.db().collection(this.collectionName);
     }
@@ -56,12 +56,13 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
                     { upsert: true, session, ignoreUndefined: true },
                 );
                 try {
-                    if (this.repoHooks) await this.repoHooks.onSave(aggregate);
+                    if (this.repoHooks) await this.repoHooks.onSave(aggregateModel);
                 } catch (e) {
                     throw new RepoHookError(`RepoHook onSave method failed with error: ${e.message}`);
                 }
             });
         } catch (e) {
+            // FIXME verify the field name because constraints could be added on other fields
             if (e.code === MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR) {
                 if (this.isTheFirstVersion(aggregateVersion)) {
                     throw new DuplicatedIdError(

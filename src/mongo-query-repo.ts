@@ -8,7 +8,7 @@ interface Logger {
 
 export abstract class MongoQueryRepo<RM extends Document> {
     protected readonly collection: Collection<RM>;
-    protected abstract readonly indexes: { indexSpec: IndexSpecification; options: CreateIndexesOptions }[];
+    protected abstract readonly indexes: { indexSpec: IndexSpecification; options?: CreateIndexesOptions }[];
 
     protected constructor(
         mongoClient: MongoClient,
@@ -25,7 +25,7 @@ export abstract class MongoQueryRepo<RM extends Document> {
         if (!isEmpty(this.indexes)) {
             for (const { indexSpec, options } of this.indexes) {
                 this.logger.log(`Creating index for ${JSON.stringify(indexSpec)} field.`);
-                await this.collection.createIndex(indexSpec, options);
+                await this.collection.createIndex(indexSpec, options || {});
             }
         }
     }

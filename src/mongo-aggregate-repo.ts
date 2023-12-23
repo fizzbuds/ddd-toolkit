@@ -10,7 +10,7 @@ export interface IAggregateRepo<A> {
     save: (aggregate: A) => Promise<void>;
 }
 
-type DocumentWithId = { id: string } & Document;
+export type DocumentWithId = { id: string } & Document;
 
 export type WithVersion<T> = T & { __version: number };
 

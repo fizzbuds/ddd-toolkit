@@ -11,10 +11,9 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "prepublishOnly": "pnpm run build",
-    "postinstall": "is-ci || husky install"
+    "postinstall": "husky install"
   },
   "dependencies": {
-    "is-ci": "^3.0.1",
     "lodash": "^4.17.21",
     "uuid": "^9.0.0"
   },

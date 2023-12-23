@@ -65,7 +65,7 @@ jobs:
           pnpm version patch
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile --prod
 
       - name: Build and Publish
         run:  pnpm publish

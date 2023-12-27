@@ -2,7 +2,7 @@ import { IRepoHooks } from './repo-hooks';
 import { Collection, Document, MongoClient } from 'mongodb';
 import { ISerializer } from './serializer.interface';
 import { merge } from 'lodash';
-import { DuplicatedIdError, OptimisticLockError, RepoHookError } from './errors';
+import { DuplicatedIdError, OptimisticLockError, RepoHookError } from '../errors';
 
 export interface IAggregateRepo<A> {
     // TODO add id as a generic type

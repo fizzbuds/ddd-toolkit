@@ -1,7 +1,7 @@
-import { MongoAggregateRepo } from './mongo-aggregate-repo';
-import { ISerializer } from './serializer.interface';
+import { MongoAggregateRepo } from '../mongo-aggregate-repo';
 import 'jest';
 import { MongoClient } from 'mongodb';
+import { ISerializer } from '../serializer.interface';
 
 const serializerMock: ISerializer<any, any> = {
     modelToAggregate: jest.fn(),

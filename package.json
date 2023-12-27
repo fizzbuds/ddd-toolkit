@@ -54,7 +54,6 @@
     "rootDir": "src",
     "testRegex": ".*spec\\.ts$",
     "testPathIgnorePatterns": [
-      ".integration-spec.ts$",
       ".api-spec.ts$"
     ],
     "transform": {

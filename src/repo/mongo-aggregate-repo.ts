@@ -3,6 +3,7 @@ import { Collection, Document, MongoClient } from 'mongodb';
 import { ISerializer } from './serializer.interface';
 import { merge } from 'lodash';
 import { DuplicatedIdError, OptimisticLockError, RepoHookError } from '../errors';
+import { ILogger } from './logger';
 
 export interface IAggregateRepo<A> {
     // TODO add id as a generic type
@@ -27,6 +28,7 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
         protected readonly mongoClient: MongoClient,
         protected readonly collectionName: string,
         protected readonly repoHooks?: IRepoHooks<AM>,
+        protected readonly logger: ILogger = console,
     ) {
         this.collection = this.mongoClient.db().collection(this.collectionName);
     }
@@ -55,8 +57,17 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
                     },
                     { upsert: true, session, ignoreUndefined: true },
                 );
+                this.logger.debug(
+                    `Aggregate with id ${
+                        aggregateModel.id
+                    } and version ${aggregateVersion} saved successfully. ${JSON.stringify(aggregateModel)}`,
+                );
+
                 try {
-                    if (this.repoHooks) await this.repoHooks.onSave(aggregateModel);
+                    if (this.repoHooks) {
+                        await this.repoHooks.onSave(aggregateModel);
+                        this.logger.debug(`RepoHook onSave method executed successfully.`);
+                    }
                 } catch (e) {
                     throw new RepoHookError(`RepoHook onSave method failed with error: ${e.message}`);
                 }
@@ -80,15 +91,16 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
         }
     }
 
-    private isTheFirstVersion(aggregateVersion: number) {
-        return aggregateVersion === 0;
-    }
-
     // TODO evaluate to implement getOrThrow
     async getById(id: string): Promise<WithVersion<A> | null> {
         const aggregateModel = await this.collection.findOne({ id: id } as any);
+        this.logger.debug(`Retrieving aggregate ${id}. Found: ${JSON.stringify(aggregateModel)}`);
         if (!aggregateModel) return null;
         const aggregate = this.serializer.modelToAggregate(aggregateModel as AM);
         return merge<A, { __version: number }>(aggregate, { __version: aggregateModel.__version });
+    }
+
+    private isTheFirstVersion(aggregateVersion: number) {
+        return aggregateVersion === 0;
     }
 }

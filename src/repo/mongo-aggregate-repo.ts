@@ -65,7 +65,7 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
 
                 try {
                     if (this.repoHooks) {
-                        await this.repoHooks.onSave(aggregateModel);
+                        await this.repoHooks.onSave(aggregateModel, session);
                         this.logger.debug(`RepoHook onSave method executed successfully.`);
                     }
                 } catch (e) {

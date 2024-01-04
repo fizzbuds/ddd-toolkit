@@ -1,3 +1,5 @@
+import { ClientSession } from 'mongodb';
+
 export interface IRepoHooks<A> {
-    onSave(aggregate: A): Promise<void>;
+    onSave(aggregate: A, mongoSession?: ClientSession): Promise<void>;
 }

@@ -5,6 +5,7 @@ import { TestAggregate, TestModel, TestSerializer } from './example.serializer';
 
 describe('MongoAggregateRepo MongoDB Integration', () => {
     let mongodb: MongoMemoryReplSet;
+    let mongoClient: MongoClient;
     let aggregateRepo: MongoAggregateRepo<TestAggregate, TestModel>;
 
     beforeAll(async () => {
@@ -15,7 +16,7 @@ describe('MongoAggregateRepo MongoDB Integration', () => {
                 storageEngine: 'wiredTiger',
             },
         });
-        const mongoClient = new MongoClient(mongodb.getUri());
+        mongoClient = new MongoClient(mongodb.getUri());
         await mongoClient.connect();
 
         aggregateRepo = new MongoAggregateRepo<TestAggregate, TestModel>(
@@ -31,6 +32,7 @@ describe('MongoAggregateRepo MongoDB Integration', () => {
     });
 
     afterAll(async () => {
+        await mongoClient.close();
         await mongodb.stop();
     });
 

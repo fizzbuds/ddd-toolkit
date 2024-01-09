@@ -27,7 +27,7 @@ describe('GenericId', () => {
     });
 
     describe('generate', function () {
-        it('should create an id object with value as uuidv4', () => {
+        it('should create an id object with value as uuid v4', () => {
             const id = CustomId.generate();
             expect(id.toString()).toMatch(
                 new RegExp(/^custom_[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i),

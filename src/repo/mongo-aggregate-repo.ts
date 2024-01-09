@@ -17,7 +17,7 @@ export type WithVersion<T> = T & { __version: number };
 
 type WithOptionalVersion<T> = T & { __version?: number };
 
-// TODO probably we should create a dedicated interface wiht like DocumentWithIdAndTimestamps
+// TODO probably we should create a dedicated interface whit like DocumentWithIdAndTimestamps
 const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
 
 export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A> {

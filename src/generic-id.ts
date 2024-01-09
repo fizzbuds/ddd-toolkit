@@ -9,7 +9,10 @@ export abstract class GenericId<T extends string = string> {
     // Must be the same name as the extended class example: CustomId -> type = 'custom'
     protected abstract readonly type: T;
 
-    constructor(readonly value: string, type?: string) {
+    constructor(
+        readonly value: string,
+        type?: string,
+    ) {
         if (isEmpty(value)) throw new Error('Value cannot be empty');
         if (typeof value !== 'string') throw new Error('Value must be a string');
         if (type && type !== this.typeFromClassNameWithoutId()) throw new Error('Wrong Id type');

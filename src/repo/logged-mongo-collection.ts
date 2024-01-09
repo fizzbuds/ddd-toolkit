@@ -15,7 +15,10 @@ import {
 import { ILogger } from './logger';
 
 export class LoggedMongoCollection<TSchema extends Document> {
-    constructor(private readonly collection: Collection<TSchema>, private readonly logger: ILogger) {
+    constructor(
+        private readonly collection: Collection<TSchema>,
+        private readonly logger: ILogger,
+    ) {
         this.collection = collection;
     }
 

@@ -2,8 +2,9 @@ import { CreateIndexesOptions, Document, IndexSpecification, MongoClient } from 
 import { isEmpty } from 'lodash';
 import { LoggedMongoCollection } from './logged-mongo-collection';
 import { ILogger } from './logger';
+import { IInit } from '../init.interface';
 
-export abstract class MongoQueryRepo<RM extends Document> {
+export abstract class MongoQueryRepo<RM extends Document> implements IInit {
     protected readonly collection: LoggedMongoCollection<RM>;
     protected abstract readonly indexes: { indexSpec: IndexSpecification; options?: CreateIndexesOptions }[];
 
@@ -15,7 +16,7 @@ export abstract class MongoQueryRepo<RM extends Document> {
         this.collection = new LoggedMongoCollection(mongoClient.db().collection(this.collectionName), this.logger);
     }
 
-    async onModuleInit() {
+    async init() {
         await this.collection.createIndex({ id: 1 }, { unique: true });
         if (!isEmpty(this.indexes)) {
             for (const { indexSpec, options } of this.indexes) {

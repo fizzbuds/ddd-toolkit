@@ -37,9 +37,9 @@ describe('MongoAggregateRepo', () => {
         });
     });
 
-    describe('onModuleInit', () => {
+    describe('init', () => {
         it('should call createIndex to create an index for id field', async () => {
-            await mongoAggregateRepo.onModuleInit();
+            await mongoAggregateRepo.init();
             expect(collectionMock.createIndex).toHaveBeenCalledWith({ id: 1 }, { unique: true });
         });
     });

@@ -24,7 +24,7 @@ describe('MongoAggregateRepo MongoDB Integration', () => {
             mongoClient,
             'collectionName',
         );
-        await aggregateRepo.onModuleInit();
+        await aggregateRepo.init();
     });
 
     afterEach(async () => {

@@ -4,6 +4,7 @@ import { ISerializer } from './serializer.interface';
 import { merge } from 'lodash';
 import { DuplicatedIdError, OptimisticLockError, RepoHookError } from '../errors';
 import { ILogger } from './logger';
+import { IInit } from '../init.interface';
 
 export interface IAggregateRepo<A> {
     // TODO add id as a generic type
@@ -20,7 +21,7 @@ type WithOptionalVersion<T> = T & { __version?: number };
 // TODO probably we should create a dedicated interface whit like DocumentWithIdAndTimestamps
 const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
 
-export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A> {
+export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A>, IInit {
     protected collection: Collection<AM>;
 
     constructor(
@@ -33,7 +34,7 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
         this.collection = this.mongoClient.db().collection(this.collectionName);
     }
 
-    async onModuleInit() {
+    async init() {
         await this.collection.createIndex({ id: 1 }, { unique: true });
     }
 

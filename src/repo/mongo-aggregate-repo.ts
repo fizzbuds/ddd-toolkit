@@ -5,11 +5,12 @@ import { merge } from 'lodash';
 import { DuplicatedIdError, OptimisticLockError, RepoHookError } from '../errors';
 import { ILogger } from './logger';
 import { IInit } from '../init.interface';
+import { OutboxV1, OutBoxV1Event } from '../outbox-v1/outbox-v1';
 
 export interface IAggregateRepo<A> {
     // TODO add id as a generic type
     getById: (id: string) => Promise<WithVersion<A> | null>;
-    save: (aggregate: A) => Promise<void>;
+    save: (aggregate: A, outboxEvents?: OutBoxV1Event[]) => Promise<void>;
 }
 
 export type DocumentWithId = { id: string } & Document;
@@ -29,6 +30,7 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
         protected readonly mongoClient: MongoClient,
         protected readonly collectionName: string,
         protected readonly repoHooks?: IRepoHooks<AM>,
+        protected readonly outbox?: OutboxV1,
         protected readonly logger: ILogger = console,
     ) {
         this.collection = this.mongoClient.db().collection(this.collectionName);
@@ -38,7 +40,7 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
         await this.collection.createIndex({ id: 1 }, { unique: true });
     }
 
-    async save(aggregate: WithOptionalVersion<A>) {
+    async save(aggregate: WithOptionalVersion<A>, outboxEvents?: OutBoxV1Event[]) {
         const aggregateModel = this.serializer.aggregateToModel(aggregate);
         const aggregateVersion = aggregate.__version || 0;
 
@@ -63,6 +65,10 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
                         aggregateModel.id
                     } and version ${aggregateVersion} saved successfully. ${JSON.stringify(aggregateModel)}`,
                 );
+
+                if (this.outbox && outboxEvents?.length) {
+                    await this.outbox.scheduleEvents(outboxEvents);
+                }
 
                 try {
                     if (this.repoHooks) {

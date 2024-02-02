@@ -1,19 +1,21 @@
-import { CreateIndexesOptions, Document, IndexSpecification, MongoClient } from 'mongodb';
+import { Collection, CreateIndexesOptions, Document, IndexSpecification, MongoClient } from 'mongodb';
 import { isEmpty } from 'lodash';
-import { LoggedMongoCollection } from './logged-mongo-collection';
 import { ILogger } from './logger';
 import { IInit } from '../init.interface';
 
 export abstract class MongoQueryRepo<RM extends Document> implements IInit {
-    protected readonly collection: LoggedMongoCollection<RM>;
+    protected readonly collection: Collection<RM>;
     protected abstract readonly indexes: { indexSpec: IndexSpecification; options?: CreateIndexesOptions }[];
 
     protected constructor(
-        mongoClient: MongoClient,
-        private readonly collectionName: string,
-        private readonly logger: ILogger = console,
+        protected readonly mongoClient: MongoClient,
+        protected readonly collectionName: string,
+        collection?: Collection<RM>,
+        protected readonly logger: ILogger = console,
     ) {
-        this.collection = new LoggedMongoCollection(mongoClient.db().collection(this.collectionName), this.logger);
+        if (!collection) {
+            this.collection = mongoClient.db().collection(this.collectionName);
+        }
     }
 
     async init() {

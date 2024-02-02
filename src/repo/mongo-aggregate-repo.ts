@@ -22,16 +22,18 @@ type WithOptionalVersion<T> = T & { __version?: number };
 const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
 
 export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A>, IInit {
-    protected collection: Collection<AM>;
-
+    protected readonly collection: Collection<AM>;
     constructor(
         protected readonly serializer: ISerializer<A, AM>,
         protected readonly mongoClient: MongoClient,
         protected readonly collectionName: string,
+        collection?: Collection<AM>,
         protected readonly repoHooks?: IRepoHooks<AM>,
         protected readonly logger: ILogger = console,
     ) {
-        this.collection = this.mongoClient.db().collection(this.collectionName);
+        if (!collection) {
+            this.collection = this.mongoClient.db().collection(this.collectionName);
+        }
     }
 
     async init() {

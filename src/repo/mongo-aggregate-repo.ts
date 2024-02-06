@@ -5,12 +5,16 @@ import { merge } from 'lodash';
 import { DuplicatedIdError, OptimisticLockError, RepoHookError } from '../errors';
 import { ILogger } from './logger';
 import { IInit } from '../init.interface';
-import { OutboxV1, OutBoxV1Event } from '../outbox-v1/outbox-v1';
+import { Event, Outbox } from '../outbox/outbox';
 
 export interface IAggregateRepo<A> {
     // TODO add id as a generic type
     getById: (id: string) => Promise<WithVersion<A> | null>;
-    save: (aggregate: A, outboxEvents?: OutBoxV1Event[]) => Promise<void>;
+    save: (aggregate: A) => Promise<void>;
+}
+
+export interface IAggregateRepoWithOutbox<A> extends IAggregateRepo<A> {
+    save: (aggregate: A, outboxEvents?: Event[]) => Promise<void>;
 }
 
 export type DocumentWithId = { id: string } & Document;
@@ -22,7 +26,9 @@ type WithOptionalVersion<T> = T & { __version?: number };
 // TODO probably we should create a dedicated interface whit like DocumentWithIdAndTimestamps
 const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
 
-export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A>, IInit {
+export class MongoAggregateRepo<A, AM extends DocumentWithId>
+    implements IAggregateRepo<A>, IAggregateRepoWithOutbox<A>, IInit
+{
     protected collection: Collection<AM>;
 
     constructor(
@@ -30,7 +36,7 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
         protected readonly mongoClient: MongoClient,
         protected readonly collectionName: string,
         protected readonly repoHooks?: IRepoHooks<AM>,
-        protected readonly outbox?: OutboxV1,
+        protected readonly outbox?: Outbox,
         protected readonly logger: ILogger = console,
     ) {
         this.collection = this.mongoClient.db().collection(this.collectionName);
@@ -40,7 +46,7 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
         await this.collection.createIndex({ id: 1 }, { unique: true });
     }
 
-    async save(aggregate: WithOptionalVersion<A>, outboxEvents?: OutBoxV1Event[]) {
+    async save(aggregate: WithOptionalVersion<A>, outboxEvents?: Event[]) {
         const aggregateModel = this.serializer.aggregateToModel(aggregate);
         const aggregateVersion = aggregate.__version || 0;
 

@@ -1,16 +1,16 @@
-import { ChangeStream, ClientSession, Collection, MongoClient, ObjectId } from 'mongodb';
+import { ClientSession, Collection, MongoClient, ObjectId } from 'mongodb';
 import { ILogger } from '../repo/logger';
-import { IInit } from '../init.interface';
-import { ITerminate } from '../terminate.interface';
-import { v4 as uuid } from 'uuid';
+import { inspect } from 'util';
+import { difference, intersection, sleep } from '../utils';
 
-export type Event = { eventPayload: any; eventRoutingKey: string };
+export type Event = { id: string; payload: any; routingKey: string };
+
 type OutboxEntryModel = {
     _id: string;
     id: string;
     event: Event;
     scheduledAt: Date;
-    status: 'scheduled' | 'processing' | 'published';
+    status: 'scheduled' | 'published';
     aggregateName: string;
     publishedAt?: Date | null;
     startProcessingAt?: Date | null;
@@ -19,13 +19,12 @@ type OutboxEntryModel = {
 
 export const DEFAULT_OUTBOX_COLLECTION_NAME = 'outbox';
 
-export class Outbox implements IInit, ITerminate {
+export class Outbox {
     private readonly collection: Collection<OutboxEntryModel>;
-    private activeChangeStream: ChangeStream<OutboxEntryModel> | undefined;
 
     constructor(
-        mongoClient: MongoClient,
-        private readonly publishEventFn: (event: Event) => Promise<void>,
+        private readonly mongoClient: MongoClient,
+        private readonly publishEventsFn: (events: Event[]) => Promise<void>,
         private readonly aggregateName: string,
         private readonly logger: ILogger = console,
         collectionName = DEFAULT_OUTBOX_COLLECTION_NAME,
@@ -33,83 +32,77 @@ export class Outbox implements IInit, ITerminate {
         this.collection = mongoClient.db().collection(collectionName);
     }
 
-    async init() {
-        void this.startOutboxWatching();
+    public async startMonitoring() {
+        void this.checkScheduledEvents([]);
     }
 
-    async terminate() {
-        await this.activeChangeStream?.close();
-    }
-
-    public async scheduleEvent(event: Event, session?: ClientSession) {
-        await this.collection.insertOne(
-            {
-                _id: new ObjectId().toString(),
-                id: uuid(),
-                event,
-                status: 'scheduled',
-                scheduledAt: new Date(),
-                aggregateName: this.aggregateName,
-            },
-            { session },
-        );
-        this.logger.debug(`Scheduled event ${JSON.stringify(event)}`);
-    }
-
-    public async scheduleEvents(events: Event[], session?: ClientSession) {
-        await Promise.all(events.map((event) => this.scheduleEvent(event, session)));
-    }
-
-    public async startOutboxWatching() {
-        this.logger.debug(`Starting watching`);
-        if (this.activeChangeStream && !this.activeChangeStream.closed) return;
-        this.activeChangeStream = this.collection.watch([
-            {
-                $match: {
-                    'fullDocument.aggregateName': this.aggregateName,
-                },
-            },
-        ]);
+    public async publishEvents(ids: string[]) {
+        const session = this.mongoClient.startSession();
         try {
-            for await (const change of this.activeChangeStream) {
-                await this.publishEvent((change as any).fullDocument);
-            }
+            await session.withTransaction(async () => {
+                const outboxModels = await this.collection.find({ id: { $in: ids } }).toArray();
+                await this.publishEventsFn(outboxModels.map((model) => model.event));
+                await this.collection.updateMany(
+                    {
+                        id: { $in: ids },
+                        aggregateName: this.aggregateName,
+                    },
+                    {
+                        $set: {
+                            status: 'published',
+                            publishedAt: new Date(),
+                        },
+                    },
+                    { session },
+                );
+            });
         } catch (e) {
-            if (this.activeChangeStream.closed) {
-                this.logger.debug(`Watching closed`);
-                return;
-            }
-            throw e;
+            this.logger.warn(`Failed to publish events ${ids.join(', ')}. ${inspect(e)}`);
+        } finally {
+            await session.endSession();
         }
-
-        await this.activeChangeStream.close();
     }
 
     public getCollection() {
         return this.collection;
     }
 
-    private async publishEvent(outBoxModel: OutboxEntryModel) {
-        const { modifiedCount } = await this.collection.updateOne(
-            { _id: outBoxModel._id, status: 'scheduled' },
-            { $set: { status: 'processing' } },
+    public async scheduleEvents(events: Event[], session?: ClientSession) {
+        await this.collection.insertMany(
+            events.map((event) => ({
+                id: event.id,
+                event,
+                status: 'scheduled',
+                scheduledAt: new Date(),
+                aggregateName: this.aggregateName,
+                _id: new ObjectId().toString(),
+            })),
+            { session },
         );
-        if (modifiedCount !== 1) return;
 
-        try {
-            await this.publishEventFn(outBoxModel.event);
-            await this.collection.updateOne(
-                { _id: outBoxModel._id },
-                {
-                    $set: {
-                        status: 'published',
-                        publishedAt: new Date(),
-                    },
-                },
-            );
-        } catch (e) {
-            this.logger.warn(`Failed publishEventFn with ${JSON.stringify(outBoxModel.event)}`);
-            //TODO add status failed and retry
+        this.logger.debug(`Scheduled ${events.length} events: ${events.map((event) => event.id).join(', ')}`);
+        return events.map((event) => event.id);
+    }
+
+    private async checkScheduledEvents(warningIds: string[]) {
+        await sleep(500);
+        const currentIds = await this.retrieveScheduledEvents();
+        const toPublish = intersection(currentIds, warningIds);
+        if (toPublish.length) {
+            this.logger.warn(`Events ${toPublish.join(', ')} are still scheduled.`);
+            await this.publishEvents(toPublish);
         }
+        const nextWarning = difference(currentIds, toPublish);
+        void this.checkScheduledEvents(nextWarning);
+    }
+
+    private async retrieveScheduledEvents() {
+        const scheduledEvents = await this.collection
+            .find({
+                status: 'scheduled',
+                aggregateName: this.aggregateName,
+            })
+            .toArray();
+        return scheduledEvents.map((event) => event.id);
     }
 }

@@ -46,11 +46,12 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId>
         await this.collection.createIndex({ id: 1 }, { unique: true });
     }
 
-    async save(aggregate: WithOptionalVersion<A>, outboxEvents?: Event[]) {
+    async save(aggregate: WithOptionalVersion<A>, outboxEventsToSchedule?: Event[]) {
         const aggregateModel = this.serializer.aggregateToModel(aggregate);
         const aggregateVersion = aggregate.__version || 0;
 
         const session = this.mongoClient.startSession();
+        let outboxScheduledEventIds: string[] = [];
 
         try {
             await session.withTransaction(async () => {
@@ -72,8 +73,8 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId>
                     } and version ${aggregateVersion} saved successfully. ${JSON.stringify(aggregateModel)}`,
                 );
 
-                if (this.outbox && outboxEvents?.length) {
-                    await this.outbox.scheduleEvents(outboxEvents);
+                if (this.outbox && outboxEventsToSchedule?.length) {
+                    outboxScheduledEventIds = await this.outbox.scheduleEvents(outboxEventsToSchedule);
                 }
 
                 try {
@@ -102,6 +103,8 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId>
         } finally {
             await session.endSession();
         }
+
+        if (this.outbox && outboxScheduledEventIds.length) await this.outbox.publishEvents(outboxScheduledEventIds);
     }
 
     // TODO evaluate to implement getOrThrow

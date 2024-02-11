@@ -85,15 +85,19 @@ export class Outbox {
     }
 
     private async checkScheduledEvents(warningIds: string[]) {
-        await sleep(500);
-        const currentIds = await this.retrieveScheduledEvents();
-        const toPublish = intersection(currentIds, warningIds);
-        if (toPublish.length) {
-            this.logger.warn(`Events ${toPublish.join(', ')} are still scheduled.`);
-            await this.publishEvents(toPublish);
+        try {
+            await sleep(500);
+            const currentIds = await this.retrieveScheduledEvents();
+            const toPublish = intersection(currentIds, warningIds);
+            if (toPublish.length) {
+                this.logger.warn(`Events ${toPublish.join(', ')} are still scheduled.`);
+                await this.publishEvents(toPublish);
+            }
+            const nextWarning = difference(currentIds, toPublish);
+            void this.checkScheduledEvents(nextWarning);
+        } catch (e) {
+            this.logger.error(`Failed to check scheduled events. ${inspect(e)}`);
         }
-        const nextWarning = difference(currentIds, toPublish);
-        void this.checkScheduledEvents(nextWarning);
     }
 
     private async retrieveScheduledEvents() {

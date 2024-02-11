@@ -1,6 +1,7 @@
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { MongoClient } from 'mongodb';
 import { DEFAULT_OUTBOX_COLLECTION_NAME, Outbox } from './outbox';
+import { eventually } from '../utils';
 
 describe('Outbox integration', () => {
     let mongodb: MongoMemoryReplSet;
@@ -20,6 +21,11 @@ describe('Outbox integration', () => {
         await mongoClient.connect();
     });
 
+    afterAll(async () => {
+        await mongoClient.close();
+        await mongodb.stop();
+    });
+
     beforeEach(async () => {
         jest.resetAllMocks();
     });
@@ -28,79 +34,49 @@ describe('Outbox integration', () => {
         await mongoClient.db().collection(DEFAULT_OUTBOX_COLLECTION_NAME).deleteMany({});
     });
 
-    afterAll(async () => {
-        await mongoClient.close();
-        await mongodb.stop();
+    const eventFixture = { id: '1', payload: 'foo-payload', routingKey: 'foo-rk' };
+
+    let outbox: Outbox;
+
+    beforeEach(async () => {
+        outbox = new Outbox(mongoClient, publishEventFnMock, 'foo-aggregate');
     });
 
-    const aggregateName = ' foo-aggregate';
-    const event = { eventPayload: 'foo-payload', eventRoutingKey: 'foo-rk' };
-
-    describe('Given a ready outbox', () => {
-        let outbox: Outbox;
-
-        beforeEach(() => {
-            outbox = new Outbox(mongoClient, publishEventFnMock, aggregateName);
+    describe('schedule events', () => {
+        beforeEach(async () => {
+            await outbox.scheduleEvents([eventFixture]);
         });
 
-        afterEach(async () => {
-            await outbox.terminate();
+        it('should schedule events', async () => {
+            const events = await outbox.getCollection().find().toArray();
+            expect(events).toHaveLength(1);
+            expect(events[0].event).toEqual(eventFixture);
+            expect(events[0].status).toEqual('scheduled');
+        });
+    });
+
+    describe('publish events', () => {
+        beforeEach(async () => {
+            await outbox.scheduleEvents([eventFixture]);
+            await outbox.publishEvents([eventFixture.id]);
         });
 
-        describe('When init', () => {
-            beforeEach(async () => {
-                await outbox.init();
-            });
+        it('should publish events', async () => {
+            const events = await outbox.getCollection().find().toArray();
+            expect(events).toHaveLength(1);
+            expect(events[0].status).toEqual('published');
+            expect(publishEventFnMock).toHaveBeenCalledWith([eventFixture]);
+        });
+    });
 
-            it('should start the outbox watching', async () => {
-                await outbox.scheduleEvent(event);
-                await sleep(500); // Needed to wait for the change stream to be triggered
-                expect(publishEventFnMock).toBeCalled();
-            });
+    describe('monitoring', () => {
+        beforeEach(async () => {
+            await outbox.startMonitoring();
+            await outbox.scheduleEvents([eventFixture]);
         });
 
-        describe('Given an active outbox watching', () => {
-            beforeEach(async () => {
-                await outbox.init();
-            });
-
-            describe('When terminate', () => {
-                beforeEach(async () => {
-                    await outbox.terminate();
-                });
-
-                it('should stop the outbox watching', async () => {
-                    await outbox.scheduleEvent(event);
-                    await sleep(500); // Needed to wait for the change stream to be triggered
-                    expect(publishEventFnMock).not.toBeCalled();
-                });
-            });
-        });
-
-        describe('When schedule an event', () => {
-            beforeEach(async () => {
-                await outbox.scheduleEvent(event);
-            });
-
-            it('should be save event as scheduled', async () => {
-                expect(await outbox.getCollection().find({ status: 'scheduled' }).toArray()).toHaveLength(1);
-            });
-        });
-
-        describe('Given an active outbox watching', () => {
-            beforeEach(async () => {
-                void outbox.startOutboxWatching();
-            });
-
-            describe('When an event is scheduled', () => {
-                it('should publish the scheduled event', async () => {
-                    await outbox.scheduleEvent(event);
-                    await sleep(500); // Needed to wait for the change stream to be triggered
-                    expect(publishEventFnMock).toBeCalledWith(event);
-                });
-            });
+        it('should monitor scheduled events', async () => {
+            await eventually(() => expect(publishEventFnMock).toHaveBeenCalledWith([eventFixture]));
         });
     });
 });
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

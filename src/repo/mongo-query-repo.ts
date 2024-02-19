@@ -19,7 +19,6 @@ export abstract class MongoQueryRepo<RM extends Document> implements IInit {
     }
 
     async init() {
-        await this.collection.createIndex({ id: 1 }, { unique: true });
         if (!isEmpty(this.indexes)) {
             for (const { indexSpec, options } of this.indexes) {
                 await this.collection.createIndex(indexSpec, options || {});

@@ -12,7 +12,7 @@ export class LocalEventBus implements IEventBus {
     }
     public async publish<T extends IEvent<unknown>>(event: T): Promise<void> {
         const handlers = this.handlers[event.name] as IEventHandler<T>[];
-        if (!handlers.length) {
+        if (!handlers || !handlers.length) {
             this.logger.warn(`No handler found for ${event.name}`);
             return;
         }

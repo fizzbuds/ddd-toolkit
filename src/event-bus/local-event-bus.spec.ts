@@ -1,5 +1,6 @@
 import { LocalEventBus } from './local-event-bus';
 import { Event } from './event';
+import { ILogger } from '../logger';
 
 class FooEvent extends Event<{ foo: string }> {
     constructor(public readonly payload: { foo: string }) {
@@ -13,16 +14,33 @@ class BarEvent extends Event<{ foo: string }> {
     }
 }
 
+const loggerMock: ILogger = {
+    log: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+};
+
 describe('LocalEventBus', () => {
     describe('Given an event bus', () => {
         let eventBus: LocalEventBus;
 
         beforeEach(() => {
-            eventBus = new LocalEventBus(console);
+            eventBus = new LocalEventBus(loggerMock);
         });
 
         afterEach(() => {
             jest.resetAllMocks();
+        });
+
+        describe('Given no subscribed handler to foo event', () => {
+            describe('When publish a foo event', () => {
+                it('Should log warning message', async () => {
+                    const event = new FooEvent({ foo: 'bar' });
+                    await eventBus.publish(event);
+
+                    expect(loggerMock.warn).toBeCalledWith(`No handler found for ${FooEvent.name}`);
+                });
+            });
         });
 
         describe('Given one subscribed handler to foo event', () => {

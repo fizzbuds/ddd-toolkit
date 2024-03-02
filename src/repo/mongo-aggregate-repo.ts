@@ -3,7 +3,7 @@ import { Collection, Document, MongoClient } from 'mongodb';
 import { ISerializer } from './serializer.interface';
 import { merge } from 'lodash';
 import { DuplicatedIdError, OptimisticLockError, RepoHookError } from '../errors';
-import { ILogger } from './logger';
+import { ILogger } from '../logger';
 import { IInit } from '../init.interface';
 
 export interface IAggregateRepo<A> {

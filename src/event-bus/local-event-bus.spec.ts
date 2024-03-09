@@ -44,15 +44,16 @@ describe('LocalEventBus', () => {
         });
 
         describe('Given one subscribed handler to foo event', () => {
-            let handler1Mock: jest.Mock;
+            const handler1Mock = jest.fn();
+
+            class FooEventHandler {
+                async handle(event: FooEvent) {
+                    await handler1Mock(event);
+                }
+            }
+
             beforeEach(() => {
-                handler1Mock = jest.fn();
-                eventBus.subscribe(
-                    {
-                        handle: handler1Mock,
-                    },
-                    FooEvent,
-                );
+                eventBus.subscribe(new FooEventHandler(), FooEvent);
             });
 
             describe('When publish a foo event', () => {
@@ -65,15 +66,16 @@ describe('LocalEventBus', () => {
             });
 
             describe('Given another subscribed handler to foo event', () => {
-                let handler2Mock: jest.Mock;
+                const handler2Mock = jest.fn();
+
+                class FooEventHandler2 {
+                    async handle(event: FooEvent) {
+                        await handler2Mock(event);
+                    }
+                }
+
                 beforeEach(() => {
-                    handler2Mock = jest.fn();
-                    eventBus.subscribe(
-                        {
-                            handle: handler2Mock,
-                        },
-                        FooEvent,
-                    );
+                    eventBus.subscribe(new FooEventHandler2(), FooEvent);
                 });
 
                 describe('When publish event', () => {
@@ -88,15 +90,16 @@ describe('LocalEventBus', () => {
             });
 
             describe('Given a handler subscribed for bar event', () => {
-                let handler3Mock: jest.Mock;
+                const handler3Mock = jest.fn();
+
+                class BarEventHandler {
+                    async handle(event: BarEvent) {
+                        await handler3Mock(event);
+                    }
+                }
+
                 beforeEach(() => {
-                    handler3Mock = jest.fn();
-                    eventBus.subscribe(
-                        {
-                            handle: handler3Mock,
-                        },
-                        BarEvent,
-                    );
+                    eventBus.subscribe(new BarEventHandler(), BarEvent);
                 });
 
                 describe('When publish FooEvent', () => {
@@ -122,24 +125,27 @@ describe('LocalEventBus', () => {
         });
 
         describe('Given two subscribed handlers (with one that fail) for foo event', () => {
-            let handlerOkMock: jest.Mock;
-            let handlerKoMock: jest.Mock;
+            const handlerOkMock = jest.fn();
+            const handlerKoMock = jest.fn();
+
+            class FooEventHandlerOk {
+                async handle(event: FooEvent) {
+                    await handlerOkMock(event);
+                }
+            }
+
+            class FooEventHandlerKo {
+                async handle(event: FooEvent) {
+                    await handlerKoMock(event);
+                    throw new Error('ko');
+                }
+            }
 
             beforeEach(() => {
-                handlerOkMock = jest.fn().mockResolvedValue('ok');
-                handlerKoMock = jest.fn().mockRejectedValue(new Error('ko'));
-                eventBus.subscribe(
-                    {
-                        handle: handlerOkMock,
-                    },
-                    FooEvent,
-                );
-                eventBus.subscribe(
-                    {
-                        handle: handlerKoMock,
-                    },
-                    FooEvent,
-                );
+                handlerOkMock.mockResolvedValue('ok');
+                handlerKoMock.mockRejectedValue(new Error('ko'));
+                eventBus.subscribe(new FooEventHandlerOk(), FooEvent);
+                eventBus.subscribe(new FooEventHandlerKo(), FooEvent);
             });
 
             describe('When publish event', () => {

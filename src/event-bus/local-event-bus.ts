@@ -1,3 +1,4 @@
+import { inspect } from 'util';
 import { ILogger } from '../logger';
 import { EventClass, IEvent, IEventBus, IEventHandler } from './event-bus.interface';
 
@@ -18,13 +19,17 @@ export class LocalEventBus implements IEventBus {
             return;
         }
 
+        void this.handleEvent(event, handlers);
+    }
+
+    private async handleEvent<T extends IEvent<unknown>>(event: T, handlers: IEventHandler<T>[]) {
         const results = await Promise.allSettled(handlers.map((handler) => handler.handle(event)));
-        const rejected = results.filter((result) => result.status === 'rejected');
-        if (rejected.length) {
-            throw new Error(`Failed to handle event. ${rejected.length} handlers failed`);
-        }
-        this.logger.debug(
-            `Handled ${event.constructor.name} event. ${handlers.length} handlers. ${JSON.stringify(event)}`,
-        );
+        results.forEach((result, index) => {
+            const handler = handlers[index];
+            if (result.status === 'fulfilled') return;
+            this.logger.error(
+                `${handler.constructor.name} failed to handle ${event.name} event due to ${inspect(result.reason)}`,
+            );
+        });
     }
 }

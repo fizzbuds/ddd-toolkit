@@ -151,18 +151,44 @@ describe('LocalEventBus', () => {
 
             describe('When publish event', () => {
                 const event = new FooEvent({ foo: 'bar' });
-                it('publish should throw an exception', async () => {
-                    await expect(eventBus.publish(event)).rejects.toThrow();
+
+                it('publish should not throw any exception', async () => {
+                    await eventBus.publish(event);
                 });
 
                 it('both handler should be called', async () => {
-                    try {
-                        await eventBus.publish(event);
-                    } catch (e) {}
+                    await eventBus.publish(event);
                     expect(handlerOkMock).toBeCalledWith(event);
                     expect(handlerKoMock).toBeCalledWith(event);
+                });
+
+                it('should log error for failing handler', async () => {
+                    await eventBus.publish(event);
+                    await waitFor(() =>
+                        expect(loggerMock.error).toBeCalledWith(
+                            expect.stringContaining('HandlerKo failed to handle FooEvent event'),
+                        ),
+                    );
                 });
             });
         });
     });
 });
+
+async function waitFor(statement: () => void, timeout = 1000): Promise<void> {
+    const startTime = Date.now();
+
+    let latestStatementError;
+    while (true) {
+        try {
+            statement();
+            return;
+        } catch (e) {
+            latestStatementError = e;
+        }
+
+        if (Date.now() - startTime > timeout) throw latestStatementError;
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+}

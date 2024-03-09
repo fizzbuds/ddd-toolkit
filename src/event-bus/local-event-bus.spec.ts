@@ -193,7 +193,9 @@ describe('LocalEventBus', () => {
                 beforeEach(async () => await eventBus.publish(event));
 
                 it('handler should be called two times', async () => {
-                    expect(handlerMock).toBeCalledTimes(2);
+                    await waitFor(() => {
+                        expect(handlerMock).toBeCalledTimes(2);
+                    });
                 });
 
                 it('should not log error for failing handler', async () => {
@@ -207,7 +209,7 @@ describe('LocalEventBus', () => {
                     await waitFor(() => {
                         expect(loggerMock.warn).toBeCalledTimes(1);
                         expect(loggerMock.warn).toBeCalledWith(
-                            'FooEventHandlerOk failed to handle FooEvent event. Attempt 1/3',
+                            expect.stringContaining('FooEventHandlerOk failed to handle FooEvent event. Attempt 1/3'),
                         );
                     });
                 });

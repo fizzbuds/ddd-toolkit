@@ -1,12 +1,14 @@
 import { inspect } from 'util';
 import { ILogger } from '../logger';
 import { EventClass, IEvent, IEventBus, IEventHandler } from './event-bus.interface';
+import { ExponentialBackoff, IExponentialBackoff } from './exponential-backoff';
 
 export class LocalEventBus implements IEventBus {
     private handlers: { [key: string]: IEventHandler<IEvent<unknown>>[] } = {};
 
     constructor(
         private logger: ILogger,
+        private readonly exponentialBackoff: IExponentialBackoff = new ExponentialBackoff(100),
         private readonly maxAttempts = 3,
     ) {}
 
@@ -35,10 +37,11 @@ export class LocalEventBus implements IEventBus {
 
             if (attempt < this.maxAttempts) {
                 const nextAttempt = attempt + 1;
+                const delay = this.exponentialBackoff.getDelay(nextAttempt);
                 this.logger.warn(
-                    `${handlerName} failed to handle ${event.name} event. Attempt ${nextAttempt}/${this.maxAttempts}`,
+                    `${handlerName} failed to handle ${event.name} event. Attempt ${nextAttempt}/${this.maxAttempts}. Delaying for ${delay}ms.`,
                 );
-                void this.handleEvent(event, [handler], nextAttempt);
+                setTimeout(() => this.handleEvent(event, [handler], nextAttempt), delay);
                 return;
             }
             this.logger.error(`${handlerName} failed to handle ${event.name} event due to ${inspect(result.reason)}`);

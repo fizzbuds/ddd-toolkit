@@ -172,6 +172,47 @@ describe('LocalEventBus', () => {
                 });
             });
         });
+
+        describe('Given one subscribed handler which fails the first execution but not the second', () => {
+            const handlerMock = jest.fn();
+
+            class FooEventHandlerOk {
+                async handle(event: FooEvent) {
+                    await handlerMock(event);
+                }
+            }
+
+            beforeEach(() => {
+                handlerMock.mockRejectedValueOnce(new Error('ko')).mockResolvedValueOnce('ok');
+                eventBus.subscribe(new FooEventHandlerOk(), FooEvent);
+            });
+
+            describe('When publish event', () => {
+                const event = new FooEvent({ foo: 'bar' });
+
+                beforeEach(async () => await eventBus.publish(event));
+
+                it('handler should be called two times', async () => {
+                    expect(handlerMock).toBeCalledTimes(2);
+                });
+
+                it('should not log error for failing handler', async () => {
+                    await waitFor(() => {
+                        expect(handlerMock).toBeCalledTimes(2);
+                        expect(loggerMock.error).not.toBeCalled();
+                    });
+                });
+
+                it('should log one retry for failing handler', async () => {
+                    await waitFor(() => {
+                        expect(loggerMock.warn).toBeCalledTimes(1);
+                        expect(loggerMock.warn).toBeCalledWith(
+                            'FooEventHandlerOk failed to handle FooEvent event. Attempt 1/3',
+                        );
+                    });
+                });
+            });
+        });
     });
 });
 

@@ -1,16 +1,20 @@
 import { inspect } from 'util';
 import { ILogger } from '../logger';
 import { IEvent, IEventBus, IEventClass, IEventHandler } from './event-bus.interface';
-import { ExponentialBackoff, IExponentialBackoff } from './exponential-backoff';
+import { ExponentialBackoff, IRetryMechanism } from './exponential-backoff';
 
 export class LocalEventBus implements IEventBus {
+    private readonly retryMechanism: IRetryMechanism;
+
     private handlers: { [key: string]: IEventHandler<IEvent<unknown>>[] } = {};
 
     constructor(
         private logger: ILogger,
-        private readonly exponentialBackoff: IExponentialBackoff = new ExponentialBackoff(100),
-        private readonly maxAttempts = 3,
-    ) {}
+        private readonly retryMaxAttempts = 5,
+        retryInitialDelay = 100,
+    ) {
+        this.retryMechanism = new ExponentialBackoff(retryInitialDelay);
+    }
 
     public subscribe<T extends IEvent<unknown>>(event: IEventClass<T>, handler: IEventHandler<T>): void {
         if (!this.handlers[event.name]) this.handlers[event.name] = [];
@@ -35,11 +39,11 @@ export class LocalEventBus implements IEventBus {
             const handler = handlers[index];
             const handlerName = handler.constructor.name;
 
-            if (attempt < this.maxAttempts) {
+            if (attempt < this.retryMaxAttempts) {
                 const nextAttempt = attempt + 1;
-                const delay = this.exponentialBackoff.getDelay(nextAttempt);
+                const delay = this.retryMechanism.getDelay(nextAttempt);
                 this.logger.warn(
-                    `${handlerName} failed to handle ${event.name} event. Attempt ${nextAttempt}/${this.maxAttempts}. Delaying for ${delay}ms.`,
+                    `${handlerName} failed to handle ${event.name} event. Attempt ${nextAttempt}/${this.retryMaxAttempts}. Delaying for ${delay}ms.`,
                 );
                 setTimeout(() => this.handleEvent(event, [handler], nextAttempt), delay);
                 return;

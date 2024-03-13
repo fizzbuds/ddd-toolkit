@@ -1,8 +1,8 @@
-export interface IExponentialBackoff {
+export interface IRetryMechanism {
     getDelay(retryCount: number): number;
 }
 
-export class ExponentialBackoff implements IExponentialBackoff {
+export class ExponentialBackoff implements IRetryMechanism {
     constructor(private readonly initialDelayMs: number) {}
 
     public getDelay(retryCount: number): number {

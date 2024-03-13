@@ -26,7 +26,7 @@ describe('LocalEventBus', () => {
         let eventBus: LocalEventBus;
 
         beforeEach(() => {
-            eventBus = new LocalEventBus(loggerMock);
+            eventBus = new LocalEventBus(loggerMock, 3, 100);
         });
 
         afterEach(() => {

@@ -12,7 +12,7 @@ export class LocalEventBus implements IEventBus {
         private readonly maxAttempts = 3,
     ) {}
 
-    public subscribe<T extends IEvent<unknown>>(handler: IEventHandler<T>, event: IEventClass<T>): void {
+    public subscribe<T extends IEvent<unknown>>(event: IEventClass<T>, handler: IEventHandler<T>): void {
         if (!this.handlers[event.name]) this.handlers[event.name] = [];
         this.handlers[event.name].push(handler);
     }

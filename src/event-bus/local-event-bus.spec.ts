@@ -54,7 +54,7 @@ describe('LocalEventBus', () => {
             }
 
             beforeEach(() => {
-                eventBus.subscribe(new FooEventHandler(), FooEvent);
+                eventBus.subscribe(FooEvent, new FooEventHandler());
             });
 
             describe('When publish a foo event', () => {
@@ -76,7 +76,7 @@ describe('LocalEventBus', () => {
                 }
 
                 beforeEach(() => {
-                    eventBus.subscribe(new FooEventHandler2(), FooEvent);
+                    eventBus.subscribe(FooEvent, new FooEventHandler2());
                 });
 
                 describe('When publish event', () => {
@@ -100,7 +100,7 @@ describe('LocalEventBus', () => {
                 }
 
                 beforeEach(() => {
-                    eventBus.subscribe(new BarEventHandler(), BarEvent);
+                    eventBus.subscribe(BarEvent, new BarEventHandler());
                 });
 
                 describe('When publish FooEvent', () => {
@@ -145,8 +145,8 @@ describe('LocalEventBus', () => {
             beforeEach(() => {
                 handlerOkMock.mockResolvedValue('ok');
                 handlerKoMock.mockRejectedValue(new Error('ko'));
-                eventBus.subscribe(new FooEventHandlerOk(), FooEvent);
-                eventBus.subscribe(new FooEventHandlerKo(), FooEvent);
+                eventBus.subscribe(FooEvent, new FooEventHandlerOk());
+                eventBus.subscribe(FooEvent, new FooEventHandlerKo());
             });
 
             describe('When publish event', () => {
@@ -184,7 +184,7 @@ describe('LocalEventBus', () => {
 
             beforeEach(() => {
                 handlerMock.mockRejectedValueOnce(new Error('ko')).mockResolvedValueOnce('ok');
-                eventBus.subscribe(new FooEventHandlerOk(), FooEvent);
+                eventBus.subscribe(FooEvent, new FooEventHandlerOk());
             });
 
             describe('When publish event', () => {

@@ -4,13 +4,13 @@ import { ILogger } from '../logger';
 
 class FooEvent extends Event<{ foo: string }> {
     constructor(public readonly payload: { foo: string }) {
-        super(FooEvent.name, payload);
+        super(payload);
     }
 }
 
 class BarEvent extends Event<{ foo: string }> {
     constructor(public readonly payload: { foo: string }) {
-        super(BarEvent.name, payload);
+        super(payload);
     }
 }
 

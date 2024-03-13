@@ -1,6 +1,6 @@
 import { inspect } from 'util';
 import { ILogger } from '../logger';
-import { EventClass, IEvent, IEventBus, IEventHandler } from './event-bus.interface';
+import { IEvent, IEventBus, IEventClass, IEventHandler } from './event-bus.interface';
 import { ExponentialBackoff, IExponentialBackoff } from './exponential-backoff';
 
 export class LocalEventBus implements IEventBus {
@@ -12,7 +12,7 @@ export class LocalEventBus implements IEventBus {
         private readonly maxAttempts = 3,
     ) {}
 
-    public subscribe<T extends IEvent<unknown>>(handler: IEventHandler<T>, event: EventClass<T>): void {
+    public subscribe<T extends IEvent<unknown>>(handler: IEventHandler<T>, event: IEventClass<T>): void {
         if (!this.handlers[event.name]) this.handlers[event.name] = [];
         this.handlers[event.name].push(handler);
     }

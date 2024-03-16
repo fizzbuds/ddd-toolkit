@@ -31,6 +31,16 @@ export class LocalEventBus implements IEventBus {
         void this.handleEvent(event, handlers);
     }
 
+    public async publishAndWaitForHandlers<T extends IEvent<unknown>>(event: T): Promise<void> {
+        const handlers = this.handlers[event.name] as IEventHandler<T>[];
+        if (!handlers || !handlers.length) {
+            this.logger.warn(`No handler found for ${event.name}`);
+            return;
+        }
+
+        await this.handleEvent(event, handlers);
+    }
+
     private async handleEvent<T extends IEvent<unknown>>(event: T, handlers: IEventHandler<T>[], attempt = 0) {
         const results = await Promise.allSettled(handlers.map((handler) => handler.handle(event)));
         results.forEach((result, index) => {

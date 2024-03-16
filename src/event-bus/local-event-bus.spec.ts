@@ -42,6 +42,15 @@ describe('LocalEventBus', () => {
                     expect(loggerMock.warn).toBeCalledWith(`No handler found for ${FooEvent.name}`);
                 });
             });
+
+            describe('When publishAndWaitForHandlers a foo event', () => {
+                it('Should log warning message', async () => {
+                    const event = new FooEvent({ foo: 'bar' });
+                    await eventBus.publishAndWaitForHandlers(event);
+
+                    expect(loggerMock.warn).toBeCalledWith(`No handler found for ${FooEvent.name}`);
+                });
+            });
         });
 
         describe('Given one subscribed handler to foo event', () => {
@@ -49,6 +58,7 @@ describe('LocalEventBus', () => {
 
             class FooEventHandler {
                 async handle(event: FooEvent) {
+                    await sleep(10);
                     await handler1Mock(event);
                 }
             }
@@ -61,6 +71,15 @@ describe('LocalEventBus', () => {
                 it('Should call handler with eventName and payload', async () => {
                     const event = new FooEvent({ foo: 'bar' });
                     await eventBus.publish(event);
+
+                    await waitFor(() => expect(handler1Mock).toBeCalledWith(event));
+                });
+            });
+
+            describe('When publishAndWaitForHandlers a foo event', () => {
+                it('Should call handler with eventName and payload', async () => {
+                    const event = new FooEvent({ foo: 'bar' });
+                    await eventBus.publishAndWaitForHandlers(event);
 
                     expect(handler1Mock).toBeCalledWith(event);
                 });
@@ -84,8 +103,8 @@ describe('LocalEventBus', () => {
                         const event = new FooEvent({ foo: 'bar' });
                         await eventBus.publish(event);
 
-                        expect(handler1Mock).toBeCalledWith(event);
-                        expect(handler2Mock).toBeCalledWith(event);
+                        await waitFor(() => expect(handler1Mock).toBeCalledWith(event));
+                        await waitFor(() => expect(handler2Mock).toBeCalledWith(event));
                     });
                 });
             });
@@ -108,7 +127,7 @@ describe('LocalEventBus', () => {
                         const event = new FooEvent({ foo: 'bar' });
                         await eventBus.publish(event);
 
-                        expect(handler1Mock).toBeCalledWith(event);
+                        await waitFor(() => expect(handler1Mock).toBeCalledWith(event));
                         expect(handler3Mock).not.toBeCalled();
                     });
                 });
@@ -234,4 +253,8 @@ async function waitFor(statement: () => void, timeout = 1000): Promise<void> {
 
         await new Promise((resolve) => setTimeout(resolve, 100));
     }
+}
+
+async function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

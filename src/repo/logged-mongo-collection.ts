@@ -12,7 +12,7 @@ import {
     UpdateFilter,
     UpdateOptions,
 } from 'mongodb';
-import { ILogger } from './logger';
+import { ILogger } from '../logger';
 
 export class LoggedMongoCollection<TSchema extends Document> {
     public readonly rawCollection: Collection<TSchema>;

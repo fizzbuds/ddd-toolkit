@@ -1,6 +1,6 @@
 import { Collection, CreateIndexesOptions, Document, IndexSpecification, MongoClient } from 'mongodb';
 import { isEmpty } from 'lodash';
-import { ILogger } from './logger';
+import { ILogger } from '../logger';
 import { IInit } from '../init.interface';
 
 export abstract class MongoQueryRepo<RM extends Document> implements IInit {

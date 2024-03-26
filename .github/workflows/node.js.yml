@@ -3,11 +3,7 @@
 
 name: Node.js CI
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+on: push
 
 jobs:
   build:
@@ -35,7 +31,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Setup MongoDB
-        run: pnpm install mongodb@${{ matrix.mongodb-version }}
+        run: pnpm install --filter=@fizzbuds/ddd-toolkit mongodb@${{ matrix.mongodb-version }}
 
       - name: Build
         run: pnpm run build

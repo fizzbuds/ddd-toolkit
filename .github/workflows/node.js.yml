@@ -64,9 +64,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate changeset from conventional commits
-        run: pnpm dlx changeset-conventional-commits
-
       - name: Create and publish versions
         uses: changesets/action@v1
         # with:

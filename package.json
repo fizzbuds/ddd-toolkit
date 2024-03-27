@@ -11,9 +11,11 @@
         "test": "pnpm run -r test",
         "test:coverage": "pnpm run -r test:coverage",
         "prepare": "husky install",
-        "check": "pnpm run -r check"
+        "check": "pnpm run -r check",
+        "ci:publish": "pnpm publish -r"
     },
     "devDependencies": {
+        "@changesets/cli": "^2.27.1",
         "husky": "^8.0.0",
         "lint-staged": "^14.0.1"
     },

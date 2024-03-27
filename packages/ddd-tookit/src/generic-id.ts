@@ -18,13 +18,10 @@ export abstract class GenericId<T extends string = string> {
         if (type && type !== this.typeFromClassNameWithoutId()) throw new Error('Wrong Id type');
     }
 
-    private typeFromClassNameWithoutId() {
-        return this.constructor.name.replace(/Id$/, '').trim().toLowerCase();
-    }
-
     static generate<IdType>(this: { new (_value: string): IdType }): IdType {
         return new this(uuid());
     }
+
     static fromString<IdType>(this: { new (_value: string, _type: string): IdType }, idString: string): IdType {
         const [type, value] = idString.split('_');
         if (!value) {
@@ -36,6 +33,7 @@ export abstract class GenericId<T extends string = string> {
     static fromValue<IdType>(this: { new (value: string): IdType }, idValue: string): IdType {
         return new this(idValue);
     }
+
     equals(other: GenericId<T>): boolean {
         if (!(other instanceof GenericId)) {
             return false;
@@ -45,5 +43,9 @@ export abstract class GenericId<T extends string = string> {
 
     toString() {
         return `${this.type}_${this.value}`;
+    }
+
+    private typeFromClassNameWithoutId() {
+        return this.constructor.name.replace(/Id$/, '').trim().toLowerCase();
     }
 }

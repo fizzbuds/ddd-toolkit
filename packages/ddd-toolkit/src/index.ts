@@ -5,3 +5,6 @@ export * from './generic-id';
 export * from './errors';
 export * from './repo/mongo-query-repo';
 export * from './event-bus/event-bus.interface';
+export * from './logger';
+export * from './event-bus/event';
+export * from './event-bus/exponential-backoff';

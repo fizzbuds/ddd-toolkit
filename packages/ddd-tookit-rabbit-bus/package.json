@@ -20,6 +20,7 @@
         "amqplib": "^0.10.3"
     },
     "devDependencies": {
+        "@types/amqplib": "^0.10.5",
         "@types/jest": "^29.5.2",
         "@types/lodash": "^4.14.195",
         "@types/node": "^20.3.1",

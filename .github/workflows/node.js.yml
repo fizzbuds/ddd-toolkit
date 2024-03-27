@@ -13,7 +13,14 @@ jobs:
         node-version: [ 18.x, 20.x ]
         mongodb-version: [ ^4.0.0, ^5.0.0, ^6.0.0 ]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
+    services:
+      rabbitmq:
+        image: rabbitmq:3.8
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        ports:
+          - 5672:5672
     steps:
       - uses: actions/checkout@v4
 

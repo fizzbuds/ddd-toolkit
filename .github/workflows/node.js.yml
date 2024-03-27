@@ -40,7 +40,7 @@ jobs:
         run: pnpm run test:coverage
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
 
   version:
     runs-on: ubuntu-latest

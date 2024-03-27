@@ -1,6 +1,6 @@
 import { LocalEventBus } from './local-event-bus';
 import { Event } from './event';
-import { ILogger } from '../logger';
+import { loggerMock } from '../logger';
 
 class FooEvent extends Event<{ foo: string }> {
     constructor(public readonly payload: { foo: string }) {
@@ -13,13 +13,6 @@ class BarEvent extends Event<{ foo: string }> {
         super(payload);
     }
 }
-
-const loggerMock: ILogger = {
-    log: jest.fn(),
-    debug: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-};
 
 describe('LocalEventBus', () => {
     describe('Given an event bus', () => {

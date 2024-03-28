@@ -14,5 +14,5 @@ export interface IEventHandler<E extends IEvent<unknown>> {
 export interface IEventBus {
     subscribe<E extends IEvent<unknown>>(event: IEventClass<E>, handler: IEventHandler<E>): void;
 
-    publish<E extends IEvent<unknown>>(event: E): Promise<void>;
+    publish<E extends IEvent<unknown>>(event: E, session?: unknown): Promise<void>;
 }

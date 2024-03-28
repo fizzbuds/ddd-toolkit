@@ -6,10 +6,11 @@ import {
     IEventHandler,
     ILogger,
     IRetryMechanism,
-} from '@fizzbuds/ddd-toolkit';
+} from '../../ddd-tookit/src';
 
 import { Channel, ConfirmChannel, connect, Connection, ConsumeMessage } from 'amqplib';
 import { inspect } from 'util';
+import { IBusPersistence } from './mongo-bus-persistence';
 
 export class RabbitEventBus implements IEventBus {
     private amqpConnection: Connection;
@@ -26,6 +27,7 @@ export class RabbitEventBus implements IEventBus {
         private readonly maxAttempts: number = 3,
         private readonly exponentialBackoff: IRetryMechanism = new ExponentialBackoff(1000),
         private readonly logger: ILogger,
+        private readonly busPersistence: IBusPersistence,
     ) {}
 
     public async init(): Promise<void> {
@@ -49,17 +51,34 @@ export class RabbitEventBus implements IEventBus {
         this.handlers[event.name] = handler;
     }
 
-    public async publish<T extends IEvent<unknown>>(event: T): Promise<void> {
-        const serializedEvent = JSON.stringify(event);
-        const message = Buffer.from(serializedEvent);
+    public async publish<T extends IEvent<unknown>>(event: T, persistenceSession?: unknown): Promise<void> {
+        const message = this.eventToRabbitMessage(event);
+        await this.busPersistence.persistEvent(event, 'pending', persistenceSession);
         this.producerChannel.publish(this.exchangeName, event.name, message);
         await this.producerChannel.waitForConfirms();
+
+        await this.busPersistence.persistEvent(event, 'published', persistenceSession);
     }
 
     public async terminate(): Promise<void> {
         await this.consumerChannel.close();
         await this.producerChannel.close();
         await this.amqpConnection.close();
+    }
+
+    async publishAllPendingEvents() {
+        for (const event of await this.busPersistence.getPendingEvents()) {
+            const message = this.eventToRabbitMessage(event);
+            this.producerChannel.publish(this.exchangeName, event.name, message);
+            await this.producerChannel.waitForConfirms();
+
+            await this.busPersistence.persistEvent(event, 'published');
+        }
+    }
+
+    private eventToRabbitMessage(event: IEvent<unknown>) {
+        const serializedEvent = JSON.stringify(event);
+        return Buffer.from(serializedEvent);
     }
 
     private async onMessage(rawMessage: ConsumeMessage | null) {

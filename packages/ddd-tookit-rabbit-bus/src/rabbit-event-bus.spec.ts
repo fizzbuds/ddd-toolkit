@@ -1,5 +1,8 @@
-import { Event, IEventHandler, ILogger } from '@fizzbuds/ddd-toolkit';
+import { Event, IEventHandler, ILogger } from '../../ddd-tookit/src';
 import { RabbitEventBus } from './rabbit-event-bus';
+import { MongoBusPersistence } from './mongo-bus-persistence';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { MongoClient } from 'mongodb';
 
 const loggerMock: ILogger = {
     log: jest.fn(),
@@ -22,6 +25,20 @@ class BarEvent extends Event<{ bar: string }> {
 
 describe('RabbitEventBus', () => {
     afterEach(() => jest.resetAllMocks());
+    let replset: MongoMemoryReplSet;
+    let mongoClient: MongoClient;
+    let mongoBusPersistence: MongoBusPersistence;
+
+    beforeAll(async () => {
+        replset = await MongoMemoryReplSet.create({ replSet: { count: 4 } });
+        mongoClient = await new MongoClient(replset.getUri()).connect();
+        mongoBusPersistence = new MongoBusPersistence(mongoClient, loggerMock);
+    });
+
+    afterAll(async () => {
+        await mongoClient.close();
+        await replset.stop();
+    });
 
     describe('Given a RabbitEventBus instance', () => {
         let rabbitEventBus: RabbitEventBus;
@@ -35,6 +52,7 @@ describe('RabbitEventBus', () => {
                 3,
                 undefined,
                 loggerMock,
+                mongoBusPersistence,
             );
         });
 
@@ -67,12 +85,33 @@ describe('RabbitEventBus', () => {
 
                 beforeEach(async () => await rabbitEventBus.subscribe(FooEvent, new FooEventHandler()));
 
-                describe('When publish an event', () => {
+                describe('When publish successfully event', () => {
                     it('should call the handler', async () => {
                         const event = new FooEvent({ foo: 'foo' });
                         await rabbitEventBus.publish(event);
 
                         await waitFor(() => expect(handlerMock).toBeCalledWith(event));
+                    });
+
+                    it('should persist the event with published status', async () => {
+                        await rabbitEventBus.publish(new FooEvent({ foo: 'foo' }));
+
+                        expect(await mongoBusPersistence.getEventStatus(new FooEvent({ foo: 'foo' }))).toBe(
+                            'published',
+                        );
+                    });
+                });
+
+                describe('When publish event fail', () => {
+                    it('should persist the event with pending status', async () => {
+                        await rabbitEventBus.terminate();
+                        try {
+                            await rabbitEventBus.publish(new FooEvent({ foo: 'foo' }));
+                        } catch (e) {}
+
+                        expect(await mongoBusPersistence.getEventStatus(new FooEvent({ foo: 'foo' }))).toBe('pending');
+
+                        await rabbitEventBus.init();
                     });
                 });
             });
@@ -125,6 +164,38 @@ describe('RabbitEventBus', () => {
 
                         await waitFor(() => expect(BarHandlerMock).toBeCalled());
                         await waitFor(() => expect(FooHandlerMock).toBeCalled());
+                    });
+                });
+            });
+
+            describe('Given some pending events', () => {
+                describe('When publishAllPendingEvents', () => {
+                    it('should publish all pending events', async () => {
+                        const fooHandlerMock = jest.fn();
+                        const barHandlerMock = jest.fn();
+
+                        class FooEventHandler implements IEventHandler<FooEvent> {
+                            async handle(event: FooEvent) {
+                                fooHandlerMock(event);
+                            }
+                        }
+
+                        class BarEventHandler implements IEventHandler<BarEvent> {
+                            async handle(event: BarEvent) {
+                                barHandlerMock(event);
+                            }
+                        }
+
+                        await rabbitEventBus.subscribe(FooEvent, new FooEventHandler());
+                        await rabbitEventBus.subscribe(BarEvent, new BarEventHandler());
+
+                        await mongoBusPersistence.persistEvent(new FooEvent({ foo: 'foo' }), 'pending');
+                        await mongoBusPersistence.persistEvent(new BarEvent({ bar: 'bar' }), 'pending');
+
+                        await rabbitEventBus.publishAllPendingEvents();
+
+                        await waitFor(() => expect(fooHandlerMock).toBeCalled());
+                        await waitFor(() => expect(barHandlerMock).toBeCalled());
                     });
                 });
             });

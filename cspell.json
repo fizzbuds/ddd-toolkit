@@ -1,4 +1,7 @@
 {
-    "language": "en",
-    "words": ["fizzbuds"]
+  "language": "en",
+  "words": [
+    "fizzbuds",
+    "replset"
+  ]
 }

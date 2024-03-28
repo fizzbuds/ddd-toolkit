@@ -6,12 +6,13 @@ import {
     IEventHandler,
     ILogger,
     IRetryMechanism,
-} from '@fizzbuds/ddd-toolkit/src';
+} from '@fizzbuds/ddd-toolkit';
+
 import { Channel, ConfirmChannel, connect, Connection, ConsumeMessage } from 'amqplib';
 import { inspect } from 'util';
 
 export class RabbitEventBus implements IEventBus {
-    private connection: Connection;
+    private amqpConnection: Connection;
     private consumerChannel: Channel;
     private producerChannel: ConfirmChannel;
 
@@ -28,12 +29,15 @@ export class RabbitEventBus implements IEventBus {
     ) {}
 
     public async init(): Promise<void> {
-        this.connection = await connect(this.amqpUrl);
-        this.consumerChannel = await this.connection.createChannel();
-        this.producerChannel = await this.connection.createConfirmChannel();
+        this.amqpConnection = await connect(this.amqpUrl);
+        this.consumerChannel = await this.amqpConnection.createChannel();
+        this.producerChannel = await this.amqpConnection.createConfirmChannel();
 
-        await this.consumerChannel.assertExchange(this.exchangeName, 'topic', { durable: true });
-        await this.consumerChannel.assertQueue(this.queueName, { arguments: { 'x-queue-type': 'quorum' } });
+        await this.consumerChannel.assertExchange(this.exchangeName, 'direct', { durable: true });
+        await this.consumerChannel.assertQueue(this.queueName, {
+            durable: true,
+            arguments: { 'x-queue-type': 'quorum' },
+        });
         await this.consumerChannel.prefetch(this.consumerPrefetch);
 
         await this.consumerChannel.consume(this.queueName, this.onMessage.bind(this));
@@ -42,7 +46,6 @@ export class RabbitEventBus implements IEventBus {
     public async subscribe<T extends IEvent<unknown>>(event: IEventClass<T>, handler: IEventHandler<T>): Promise<void> {
         if (this.handlers[event.name]) throw new Error(`Handler for event ${event.name} already exists`);
         await this.consumerChannel.bindQueue(this.queueName, this.exchangeName, event.name);
-
         this.handlers[event.name] = handler;
     }
 
@@ -56,7 +59,7 @@ export class RabbitEventBus implements IEventBus {
     public async terminate(): Promise<void> {
         await this.consumerChannel.close();
         await this.producerChannel.close();
-        await this.connection.close();
+        await this.amqpConnection.close();
     }
 
     private async onMessage(rawMessage: ConsumeMessage | null) {

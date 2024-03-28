@@ -6,7 +6,7 @@ import {
     IEventHandler,
     ILogger,
     IRetryMechanism,
-} from '../../ddd-tookit/src';
+} from '../../ddd-toolkit/src';
 
 import { Channel, ConfirmChannel, connect, Connection, ConsumeMessage } from 'amqplib';
 import { inspect } from 'util';

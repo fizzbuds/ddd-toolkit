@@ -91,11 +91,11 @@ importers:
         specifier: ^5.1.3
         version: 5.1.3
 
-  packages/ddd-tookit-rabbit-bus:
+  packages/ddd-toolkit-rabbit-bus:
     dependencies:
       '@fizzbuds/ddd-toolkit':
         specifier: workspace:^
-        version: link:../ddd-tookit
+        version: link:../ddd-toolkit
     devDependencies:
       '@types/amqplib':
         specifier: ^0.10.5
@@ -175,8 +175,8 @@ packages:
     dev: true
 
   /@acuminous/bitsyntax@0.1.2:
-    resolution: {integrity: sha512-29lUK80d1muEQqiUsSo+3A0yP6CdspgC95EnKBMi22Xlwt79i/En4Vr67+cXhU+cZjbti3TgGGC5wy1stIywVQ==}
-    engines: {node: '>=0.8'}
+    resolution: { integrity: sha512-29lUK80d1muEQqiUsSo+3A0yP6CdspgC95EnKBMi22Xlwt79i/En4Vr67+cXhU+cZjbti3TgGGC5wy1stIywVQ== }
+    engines: { node: '>=0.8' }
     dependencies:
       buffer-more-ints: 1.0.0
       debug: 4.3.4
@@ -2409,7 +2409,7 @@ packages:
     dev: true
 
   /@types/amqplib@0.10.5:
-    resolution: {integrity: sha512-/cSykxROY7BWwDoi4Y4/jLAuZTshZxd8Ey1QYa/VaXriMotBDoou7V/twJiOSHzU6t1Kp1AHAUXGCgqq+6DNeg==}
+    resolution: { integrity: sha512-/cSykxROY7BWwDoi4Y4/jLAuZTshZxd8Ey1QYa/VaXriMotBDoou7V/twJiOSHzU6t1Kp1AHAUXGCgqq+6DNeg== }
     dependencies:
       '@types/node': 20.3.1
     dev: true
@@ -2703,8 +2703,8 @@ packages:
     dev: true
 
   /amqplib@0.10.3:
-    resolution: {integrity: sha512-UHmuSa7n8vVW/a5HGh2nFPqAEr8+cD4dEZ6u9GjP91nHfr1a54RyAKyra7Sb5NH7NBKOUlyQSMXIp0qAixKexw==}
-    engines: {node: '>=10'}
+    resolution: { integrity: sha512-UHmuSa7n8vVW/a5HGh2nFPqAEr8+cD4dEZ6u9GjP91nHfr1a54RyAKyra7Sb5NH7NBKOUlyQSMXIp0qAixKexw== }
+    engines: { node: '>=10' }
     dependencies:
       '@acuminous/bitsyntax': 0.1.2
       buffer-more-ints: 1.0.0
@@ -3014,7 +3014,7 @@ packages:
     dev: true
 
   /buffer-more-ints@1.0.0:
-    resolution: {integrity: sha512-EMetuGFz5SLsT0QTnXzINh4Ksr+oo4i+UGTXEshiGCQWnsgSs7ZhJ8fzlwQ+OzEMs0MpDAMr1hxnblp5a4vcHg==}
+    resolution: { integrity: sha512-EMetuGFz5SLsT0QTnXzINh4Ksr+oo4i+UGTXEshiGCQWnsgSs7ZhJ8fzlwQ+OzEMs0MpDAMr1hxnblp5a4vcHg== }
     dev: true
 
   /buffer@5.7.1:
@@ -4604,7 +4604,7 @@ packages:
     dev: true
 
   /isarray@0.0.1:
-    resolution: {integrity: sha512-D2S+3GLxWH+uhrNEcoh/fnmYeP8E8/zHl644d/jdA0g2uyXvy3sb0qxotE+ne0LtccHknQzWwZEzhak7oJ0COQ==}
+    resolution: { integrity: sha512-D2S+3GLxWH+uhrNEcoh/fnmYeP8E8/zHl644d/jdA0g2uyXvy3sb0qxotE+ne0LtccHknQzWwZEzhak7oJ0COQ== }
     dev: true
 
   /isarray@2.0.5:
@@ -5818,7 +5818,7 @@ packages:
     dev: true
 
   /querystringify@2.2.0:
-    resolution: {integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==}
+    resolution: { integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ== }
     dev: true
 
   /queue-microtask@1.2.3:
@@ -5864,7 +5864,7 @@ packages:
     dev: true
 
   /readable-stream@1.1.14:
-    resolution: {integrity: sha512-+MeVjFf4L44XUkhM1eYbD8fyEsxcV81pqMSR5gblfcLCHfZvbrqy4/qYHE+/R5HoBUT11WV5O08Cr1n3YXkWVQ==}
+    resolution: { integrity: sha512-+MeVjFf4L44XUkhM1eYbD8fyEsxcV81pqMSR5gblfcLCHfZvbrqy4/qYHE+/R5HoBUT11WV5O08Cr1n3YXkWVQ== }
     dependencies:
       core-util-is: 1.0.3
       inherits: 2.0.4
@@ -5918,7 +5918,7 @@ packages:
     dev: true
 
   /requires-port@1.0.0:
-    resolution: {integrity: sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==}
+    resolution: { integrity: sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ== }
     dev: true
 
   /resolve-cwd@3.0.0:
@@ -6001,7 +6001,7 @@ packages:
     dev: true
 
   /safe-buffer@5.1.2:
-    resolution: {integrity: sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==}
+    resolution: { integrity: sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g== }
     dev: true
 
   /safe-buffer@5.2.1:
@@ -6279,7 +6279,7 @@ packages:
     dev: true
 
   /string_decoder@0.10.31:
-    resolution: {integrity: sha512-ev2QzSzWPYmy9GuqfIVildA4OdcGLeFZQrq5ys6RtiuF+RQQiZWr8TZNyAcuVXyQRYfEO+MsoB/1BuQVhOJuoQ==}
+    resolution: { integrity: sha512-ev2QzSzWPYmy9GuqfIVildA4OdcGLeFZQrq5ys6RtiuF+RQQiZWr8TZNyAcuVXyQRYfEO+MsoB/1BuQVhOJuoQ== }
     dev: true
 
   /string_decoder@1.3.0:
@@ -6679,7 +6679,7 @@ packages:
     dev: true
 
   /url-parse@1.5.10:
-    resolution: {integrity: sha512-WypcfiRhfeUP9vvF0j6rw0J3hrWrw6iZv3+22h6iRMJ/8z1Tj6XfLP4DsUix5MhMPnXpiHDoKyoZ/bdCkwBCiQ==}
+    resolution: { integrity: sha512-WypcfiRhfeUP9vvF0j6rw0J3hrWrw6iZv3+22h6iRMJ/8z1Tj6XfLP4DsUix5MhMPnXpiHDoKyoZ/bdCkwBCiQ== }
     dependencies:
       querystringify: 2.2.0
       requires-port: 1.0.0

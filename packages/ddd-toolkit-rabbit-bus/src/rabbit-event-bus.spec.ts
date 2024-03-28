@@ -1,4 +1,4 @@
-import { Event, IEventHandler, ILogger } from '../../ddd-tookit/src';
+import { Event, IEventHandler, ILogger } from '../../ddd-toolkit/src';
 import { RabbitEventBus } from './rabbit-event-bus';
 import { MongoBusPersistence } from './mongo-bus-persistence';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';

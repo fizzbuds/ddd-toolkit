@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.0.37
+
+### Patch Changes
+
+- 5caadf9: Add pre publish script
+
 ## 0.0.36
 
 ### Patch Changes

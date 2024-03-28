@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.0.36
+
+### Patch Changes
+
+- 80c004e: fix(mongo-query-repo): warning in case of missing index
+
 ## 0.0.35
 
 ### Patch Changes

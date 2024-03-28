@@ -11,7 +11,8 @@
         "build": "rimraf dist && tsc --project tsconfig.build.json",
         "test": "jest",
         "test:coverage": "jest --coverage",
-        "check": "cspell lint --quiet src"
+        "check": "cspell lint --quiet src",
+        "prepublishOnly": "npm run build"
     },
     "dependencies": {
         "lodash": "^4.17.21",

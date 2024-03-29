@@ -7,6 +7,7 @@ export * from './event-bus/event-bus.interface';
 export * from './logger';
 export * from './event-bus/event';
 export * from './event-bus/exponential-backoff';
+export * from './utils';
 export * from './repo/mongo-aggregate-repo-with-outbox';
 export * from './query-bus';
 export * from './command-bus';

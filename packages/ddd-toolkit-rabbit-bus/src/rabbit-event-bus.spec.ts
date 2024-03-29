@@ -1,4 +1,4 @@
-import { Event, IEventHandler, ILogger } from '../../ddd-toolkit';
+import { Event, IEventHandler, ILogger, waitFor } from '@fizzbuds/ddd-toolkit';
 import { RabbitEventBus } from './rabbit-event-bus';
 
 const loggerMock: ILogger = {
@@ -145,21 +145,3 @@ describe('RabbitEventBus', () => {
         });
     });
 });
-
-async function waitFor(statement: () => void, timeout = 1000): Promise<void> {
-    const startTime = Date.now();
-
-    let latestStatementError;
-    while (true) {
-        try {
-            statement();
-            return;
-        } catch (e) {
-            latestStatementError = e;
-        }
-
-        if (Date.now() - startTime > timeout) throw latestStatementError;
-
-        await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-}

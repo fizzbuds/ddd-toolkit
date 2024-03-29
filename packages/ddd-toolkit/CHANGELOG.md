@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.0.38
+
+### Patch Changes
+
+- 864aed2: typo in core package folder
+
 ## 0.0.37
 
 ### Patch Changes

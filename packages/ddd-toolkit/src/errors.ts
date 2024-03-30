@@ -15,3 +15,9 @@ export class RepoHookError extends Error {
         super(message);
     }
 }
+
+export class AggregateNotFoundError extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+}

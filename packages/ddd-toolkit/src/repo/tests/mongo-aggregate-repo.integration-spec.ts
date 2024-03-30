@@ -2,6 +2,7 @@ import { MongoAggregateRepo } from '../mongo-aggregate-repo';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { MongoClient } from 'mongodb';
 import { TestAggregate, TestModel, TestSerializer } from './example.serializer';
+import { AggregateNotFoundError } from '../../errors';
 
 describe('MongoAggregateRepo MongoDB Integration', () => {
     let mongodb: MongoMemoryReplSet;
@@ -39,7 +40,7 @@ describe('MongoAggregateRepo MongoDB Integration', () => {
     });
 
     describe('Save and Get', () => {
-        describe('Given an aggregate', () => {
+        describe('Given an existing aggregate', () => {
             describe('When saving', () => {
                 const id1 = 'id1';
                 beforeEach(async () => {
@@ -51,6 +52,22 @@ describe('MongoAggregateRepo MongoDB Integration', () => {
                         id: id1,
                         data: 'value',
                     });
+                });
+            });
+        });
+
+        describe('Given an un-existing aggregate', () => {
+            describe('When getById', () => {
+                it('should return null', async () => {
+                    expect(await aggregateRepo.getById('not-existing-id')).toBeNull();
+                });
+            });
+
+            describe('When getByIdOrThrow', () => {
+                it('should throw AggregateNotFoundError', async () => {
+                    await expect(() => aggregateRepo.getByIdOrThrow('not-existing-id')).rejects.toThrowError(
+                        AggregateNotFoundError,
+                    );
                 });
             });
         });

@@ -1,6 +1,7 @@
 import { LocalEventBus } from './local-event-bus';
 import { Event } from './event';
 import { loggerMock } from '../logger';
+import { sleep, waitFor } from '../utils';
 
 class FooEvent extends Event<{ foo: string }> {
     constructor(public readonly payload: { foo: string }) {
@@ -229,25 +230,3 @@ describe('LocalEventBus', () => {
         });
     });
 });
-
-async function waitFor(statement: () => void, timeout = 1000): Promise<void> {
-    const startTime = Date.now();
-
-    let latestStatementError;
-    while (true) {
-        try {
-            statement();
-            return;
-        } catch (e) {
-            latestStatementError = e;
-        }
-
-        if (Date.now() - startTime > timeout) throw latestStatementError;
-
-        await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-}
-
-async function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}

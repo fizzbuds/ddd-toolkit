@@ -8,9 +8,10 @@ import { IOutbox } from './outbox.interface';
 type OutboxEventModel = {
     event: IEvent<unknown>;
     scheduledAt: Date;
-    status: 'scheduled' | 'published';
+    status: 'scheduled' | 'processing' | 'published';
     publishedAt?: Date;
     contextName?: string;
+    locked?: boolean;
 };
 
 export class MongoOutbox implements IOutbox {
@@ -30,6 +31,7 @@ export class MongoOutbox implements IOutbox {
     }
 
     public async init() {
+        this.logger.debug(`Starting outbox monitoring with interval ${this.monitoringIntervalMs}ms`);
         void this.checkScheduledEvents([]);
     }
 
@@ -48,6 +50,7 @@ export class MongoOutbox implements IOutbox {
             })),
             { session: clientSession },
         );
+        this.logger.debug(`Scheduled events ${Object.values(insertedIds).join(', ')}`);
         return Object.values(insertedIds).map((id) => id.toString());
     }
 
@@ -58,6 +61,7 @@ export class MongoOutbox implements IOutbox {
                 const outboxModels = await this.outboxCollection
                     .find({ _id: { $in: eventIds.map((id) => new ObjectId(id)) }, status: 'scheduled' }, { session })
                     .toArray();
+                if (!outboxModels.length) return;
                 const events = outboxModels.map((model) => model.event);
                 await this.publishEventsFn(events);
                 const publishedIds = outboxModels.map((model) => model._id);
@@ -91,12 +95,13 @@ export class MongoOutbox implements IOutbox {
             const toPublish = intersection(currentIds, warningIds);
             if (toPublish.length) {
                 this.logger.warn(`Events ${toPublish.join(', ')} are still scheduled.`);
-                await this.publishEvents(toPublish);
+                await Promise.all(toPublish.map((eventId) => this.publishEventWithConcurrencyControl(eventId)));
             }
             const nextWarning = difference(currentIds, toPublish);
             void this.checkScheduledEvents(nextWarning);
         } catch (e) {
             this.logger.error(`Failed to check scheduled events. ${inspect(e)}`);
+            void this.checkScheduledEvents([]);
         }
     }
 
@@ -108,6 +113,41 @@ export class MongoOutbox implements IOutbox {
             })
             .toArray();
         return scheduledEvents.map((event) => event._id.toString());
+    }
+
+    private async publishEventWithConcurrencyControl(eventId: string) {
+        const session = this.mongoClient.startSession();
+        try {
+            await session.withTransaction(async () => {
+                const { modifiedCount } = await this.outboxCollection.updateOne(
+                    { _id: new ObjectId(eventId), status: 'scheduled' },
+                    { $set: { status: 'processing' } },
+                    { session },
+                );
+                if (modifiedCount !== 1) {
+                    this.logger.debug(`Event ${eventId} is already being processed.`);
+                    return;
+                }
+                this.logger.debug(`Event ${eventId} is being processed.`);
+
+                const outBoxModel = await this.outboxCollection.findOne({ _id: new ObjectId(eventId) }, { session });
+                if (!outBoxModel) return;
+
+                await this.publishEventsFn([outBoxModel.event]);
+                await this.outboxCollection.updateOne(
+                    { _id: new ObjectId(eventId) },
+                    {
+                        $set: {
+                            status: 'published',
+                            publishedAt: new Date(),
+                        },
+                    },
+                    { session },
+                );
+            });
+        } finally {
+            await session.endSession();
+        }
     }
 }
 

@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.0.39
+
+### Patch Changes
+
+- ffb1238: add getByIdOrThrow to IAggregateRepo
+
 ## 0.0.38
 
 ### Patch Changes

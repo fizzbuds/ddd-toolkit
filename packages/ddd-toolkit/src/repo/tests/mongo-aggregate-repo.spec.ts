@@ -4,7 +4,7 @@ import { ISerializer } from '../serializer.interface';
 import { collectionMock, mongoClientMock } from './mongo.mock';
 
 const serializerMock: ISerializer<any, any> = {
-    modelToAggregate: jest.fn(),
+    modelToAggregate: jest.fn().mockReturnValue({ id: 'id' }),
     aggregateToModel: jest.fn().mockReturnValue({ id: 'id' }),
 };
 
@@ -31,6 +31,25 @@ describe('MongoAggregateRepo', () => {
         it('should call findOne with id', async () => {
             await mongoAggregateRepo.getById('id');
             expect(collectionMock.findOne).toHaveBeenCalledWith({ id: 'id' });
+        });
+    });
+
+    describe('getByIdOrThrow', () => {
+        it('should call findOne with id', async () => {
+            try {
+                await mongoAggregateRepo.getByIdOrThrow('id');
+            } catch (e) {}
+            expect(collectionMock.findOne).toHaveBeenCalledWith({ id: 'id' });
+        });
+
+        it('should throw AggregateNotFoundError if not found', async () => {
+            collectionMock.findOne.mockResolvedValue(null);
+            await expect(mongoAggregateRepo.getByIdOrThrow('id')).rejects.toThrow();
+        });
+
+        it('should return aggregate if found', async () => {
+            collectionMock.findOne.mockResolvedValue({ id: 'id' });
+            expect(await mongoAggregateRepo.getByIdOrThrow('id')).toMatchObject({ id: 'id' });
         });
     });
 

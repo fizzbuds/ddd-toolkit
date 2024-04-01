@@ -1,14 +1,15 @@
 import { IRepoHooks } from './repo-hooks';
-import { Collection, Document, MongoClient } from 'mongodb';
+import { Collection, Document, MongoClient, WithId } from 'mongodb';
 import { ISerializer } from './serializer.interface';
 import { merge } from 'lodash';
-import { DuplicatedIdError, OptimisticLockError, RepoHookError } from '../errors';
+import { AggregateNotFoundError, DuplicatedIdError, OptimisticLockError, RepoHookError } from '../errors';
 import { ILogger } from '../logger';
 import { IInit } from '../init.interface';
 
 export interface IAggregateRepo<A> {
     // TODO add id as a generic type
     getById: (id: string) => Promise<WithVersion<A> | null>;
+    getByIdOrThrow: (id: string) => Promise<WithVersion<A>>;
     save: (aggregate: A) => Promise<void>;
 }
 
@@ -23,6 +24,7 @@ const MONGODB_UNIQUE_INDEX_CONSTRAINT_ERROR = 11000;
 
 export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggregateRepo<A>, IInit {
     protected readonly collection: Collection<AM>;
+
     constructor(
         protected readonly serializer: ISerializer<A, AM>,
         protected readonly mongoClient: MongoClient,
@@ -94,11 +96,21 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
         }
     }
 
-    // TODO evaluate to implement getOrThrow
     async getById(id: string): Promise<WithVersion<A> | null> {
         const aggregateModel = await this.collection.findOne({ id: id } as any);
         this.logger.debug(`Retrieving aggregate ${id}. Found: ${JSON.stringify(aggregateModel)}`);
         if (!aggregateModel) return null;
+
+        return this.modelToAggregateWithVersion(aggregateModel);
+    }
+
+    async getByIdOrThrow(id: string): Promise<WithVersion<A>> {
+        const aggregate = await this.getById(id);
+        if (!aggregate) throw new AggregateNotFoundError(`Aggregate ${id} not found.`);
+        return aggregate;
+    }
+
+    private modelToAggregateWithVersion(aggregateModel: WithId<AM>): WithVersion<A> {
         const aggregate = this.serializer.modelToAggregate(aggregateModel as AM);
         return merge<A, { __version: number }>(aggregate, { __version: aggregateModel.__version });
     }

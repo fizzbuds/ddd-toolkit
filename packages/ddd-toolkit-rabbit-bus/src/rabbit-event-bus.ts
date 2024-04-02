@@ -64,7 +64,15 @@ export class RabbitEventBus implements IEventBus {
 
     private async onMessage(rawMessage: ConsumeMessage | null, queueName: string) {
         if (rawMessage === null) return;
-        const parsedMessage = JSON.parse(rawMessage.content.toString());
+        let parsedMessage: unknown;
+
+        try {
+            parsedMessage = JSON.parse(rawMessage.content.toString());
+        } catch (e) {
+            this.connection.getConsumerChannel().nack(rawMessage, false, false);
+            this.logger.warn(`Message discarded due to invalid format (not json)`);
+            return;
+        }
 
         if (!this.isAValidMessage(parsedMessage)) {
             this.connection.getConsumerChannel().nack(rawMessage, false, false);
@@ -72,17 +80,18 @@ export class RabbitEventBus implements IEventBus {
             return;
         }
 
-        const handler = this.handlers.find((h) => h.eventName === parsedMessage.name && h.queueName === queueName)
-            ?.handler;
+        const event = parsedMessage as IEvent<unknown>;
+
+        const handler = this.handlers.find((h) => h.eventName === event.name && h.queueName === queueName)?.handler;
 
         if (!handler) {
             this.connection.getConsumerChannel().nack(rawMessage, false, false);
-            this.logger.warn(`Message discarded due to missing handler for ${parsedMessage.name}`);
+            this.logger.warn(`Message discarded due to missing handler for ${event.name}`);
             return;
         }
 
         try {
-            await handler.handle(parsedMessage);
+            await handler.handle(event);
             this.connection.getConsumerChannel().ack(rawMessage);
         } catch (e) {
             this.logger.warn(`Error handling message due ${inspect(e)}`);

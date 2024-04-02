@@ -1,5 +1,5 @@
 import { Event, IEventHandler, ILogger, waitFor } from '@fizzbuds/ddd-toolkit';
-import { RabbitEventBus } from './rabbit-event-bus';
+import { RabbitEventBus } from './index';
 
 const loggerMock: ILogger = {
     log: jest.fn(),
@@ -49,6 +49,30 @@ describe('RabbitEventBus', () => {
                 await rabbitEventBus.publish(event);
 
                 await waitFor(() => expect(handlerMock).toBeCalledWith(event));
+            });
+        });
+
+        describe('When publish an invalid event (not json)', () => {
+            it('should warn', async () => {
+                rabbitEventBus['connection']['producerChannel'].publish('exchange', 'FooEvent', Buffer.from(''));
+                await rabbitEventBus['connection']['producerChannel'].waitForConfirms();
+
+                await waitFor(() =>
+                    expect(loggerMock.warn).toBeCalledWith('Message discarded due to invalid format (not json)'),
+                );
+            });
+        });
+
+        describe('When publish an invalid event (without event)', () => {
+            it('should warn', async () => {
+                rabbitEventBus['connection']['producerChannel'].publish(
+                    'exchange',
+                    'FooEvent',
+                    Buffer.from(JSON.stringify({})),
+                );
+                await rabbitEventBus['connection']['producerChannel'].waitForConfirms();
+
+                await waitFor(() => expect(loggerMock.warn).toBeCalledWith('Message discarded due to invalid format'));
             });
         });
 
@@ -141,6 +165,93 @@ describe('RabbitEventBus', () => {
 
                 await waitFor(() => expect(BarHandlerMock).toBeCalled());
                 await waitFor(() => expect(FooHandlerMock).toBeCalled());
+            });
+        });
+    });
+
+    describe('Given no handler subscribed', () => {
+        class FooEventHandler implements IEventHandler<FooEvent> {
+            async handle() {}
+        }
+
+        beforeEach(async () => {
+            await rabbitEventBus.subscribe(FooEvent, new FooEventHandler());
+            rabbitEventBus['handlers'] = [];
+        });
+
+        describe('When publish Foo event', () => {
+            const event = new FooEvent({ foo: 'foo' });
+
+            it('should warn', async () => {
+                await rabbitEventBus.publish(event);
+
+                await waitFor(() =>
+                    expect(loggerMock.warn).toBeCalledWith('Message discarded due to missing handler for FooEvent'),
+                );
+            });
+        });
+    });
+
+    describe('Given a rejecting handler subscribed to an event', () => {
+        const handlerMock = jest.fn();
+
+        class FooEventHandler implements IEventHandler<FooEvent> {
+            async handle(event: FooEvent) {
+                handlerMock(event);
+            }
+        }
+
+        beforeEach(async () => {
+            handlerMock.mockImplementation(() => {
+                throw new Error();
+            });
+            await rabbitEventBus.subscribe(FooEvent, new FooEventHandler());
+        });
+
+        describe('When publish an event', () => {
+            it('should call the handler', async () => {
+                const event = new FooEvent({ foo: 'foo' });
+                await rabbitEventBus.publish(event);
+
+                await waitFor(() => {
+                    expect(loggerMock.error).toBeCalledWith(expect.stringContaining('Message sent to dlq'));
+                }, 5000);
+            });
+        });
+    });
+
+    describe('Given a temporarily rejecting handler subscribed to an event', () => {
+        const handlerMock = jest.fn();
+
+        class FooEventHandler implements IEventHandler<FooEvent> {
+            async handle(event: FooEvent) {
+                handlerMock(event);
+            }
+        }
+
+        beforeEach(async () => {
+            handlerMock.mockImplementationOnce(() => {
+                throw new Error();
+            });
+            handlerMock.mockImplementationOnce(() => {
+                throw new Error();
+            });
+            handlerMock.mockImplementationOnce(() => 'ok');
+            await rabbitEventBus.subscribe(FooEvent, new FooEventHandler());
+        });
+
+        describe('When publish an event', () => {
+            it('should call the handler', async () => {
+                const event = new FooEvent({ foo: 'foo' });
+                await rabbitEventBus.publish(event);
+
+                await waitFor(() => {
+                    expect(loggerMock.warn).toHaveBeenNthCalledWith(
+                        2,
+                        expect.stringContaining('Message re-queued due'),
+                    );
+                    expect(handlerMock).toBeCalledTimes(3);
+                }, 5000);
             });
         });
     });

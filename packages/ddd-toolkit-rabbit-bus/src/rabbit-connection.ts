@@ -4,6 +4,7 @@ import { inspect } from 'util';
 
 // FROM https://github.com/gpad/ms-practical-ws/blob/main/src/infra/rabbit.ts
 
+/* istanbul ignore next */
 export class RabbitConnection {
     private static RECONNECTION_TIMEOUT = 2000;
 

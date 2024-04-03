@@ -2,8 +2,9 @@ import { LocalCommandBus } from './local-command-bus';
 import { Command } from './command';
 import { loggerMock } from '../logger';
 import { waitFor } from '../utils';
+import { ICommandHandler } from './command-bus.interface';
 
-class FooCommand extends Command<{ foo: string }> {
+class FooCommand extends Command<{ foo: string }, { ok: boolean }> {
     constructor(public readonly payload: { foo: string }) {
         super(payload);
     }
@@ -39,11 +40,11 @@ describe('LocalCommandBus', () => {
         });
 
         describe('Given one registered handler to foo command', () => {
-            const handler1Mock = jest.fn();
+            const FooHandlerMock = jest.fn();
 
-            class FooCommandHandler {
+            class FooCommandHandler implements ICommandHandler<FooCommand> {
                 async handle(command: FooCommand) {
-                    await handler1Mock(command);
+                    return await FooHandlerMock(command);
                 }
             }
 
@@ -56,16 +57,27 @@ describe('LocalCommandBus', () => {
                     const command = new FooCommand({ foo: 'bar' });
                     await commandBus.send(command);
 
-                    await waitFor(() => expect(handler1Mock).toBeCalledWith(command));
+                    await waitFor(() => expect(FooHandlerMock).toBeCalledWith(command));
+                });
+            });
+
+            describe('When sendSync a foo command', () => {
+                beforeEach(() => {
+                    FooHandlerMock.mockResolvedValueOnce({ ok: true });
+                });
+                it('Should call handler with commandName and payload', async () => {
+                    const command = new FooCommand({ foo: 'bar' });
+                    const result = await commandBus.sendSync(command);
+                    expect(result).toEqual({ ok: true });
                 });
             });
 
             describe('Given a handler registered for bar command', () => {
-                const handler3Mock = jest.fn();
+                const BarHandlerMock = jest.fn();
 
-                class BarCommandHandler {
+                class BarCommandHandler implements ICommandHandler<BarCommand> {
                     async handle(command: BarCommand) {
-                        await handler3Mock(command);
+                        return await BarHandlerMock(command);
                     }
                 }
 
@@ -78,8 +90,8 @@ describe('LocalCommandBus', () => {
                         const command = new FooCommand({ foo: 'bar' });
                         await commandBus.send(command);
 
-                        await waitFor(() => expect(handler1Mock).toBeCalledWith(command));
-                        expect(handler3Mock).not.toBeCalled();
+                        await waitFor(() => expect(FooHandlerMock).toBeCalledWith(command));
+                        expect(BarHandlerMock).not.toBeCalled();
                     });
                 });
 
@@ -88,8 +100,8 @@ describe('LocalCommandBus', () => {
                         const command = new BarCommand({ foo: 'bar' });
                         await commandBus.send(command);
 
-                        expect(handler1Mock).not.toBeCalled();
-                        expect(handler3Mock).toBeCalledWith(command);
+                        expect(FooHandlerMock).not.toBeCalled();
+                        expect(BarHandlerMock).toBeCalledWith(command);
                     });
                 });
             });
@@ -98,9 +110,9 @@ describe('LocalCommandBus', () => {
         describe('Given one registered handler which fails the first execution but not the second', () => {
             const handlerMock = jest.fn();
 
-            class FooCommandHandlerOk {
+            class FooCommandHandlerOk implements ICommandHandler<FooCommand> {
                 async handle(command: FooCommand) {
-                    await handlerMock(command);
+                    return await handlerMock(command);
                 }
             }
 

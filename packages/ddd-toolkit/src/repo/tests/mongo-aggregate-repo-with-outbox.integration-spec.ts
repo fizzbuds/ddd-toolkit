@@ -50,7 +50,7 @@ describe('MongoAggregateRepo MongoDB Integration', () => {
     });
 
     afterAll(async () => {
-        await outbox.dispose();
+        await outbox.terminate();
         await mongoClient.close();
         await mongodb.stop();
     });

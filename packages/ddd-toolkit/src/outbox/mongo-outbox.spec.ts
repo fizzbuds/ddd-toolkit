@@ -39,7 +39,7 @@ describe('Mongo outbox', () => {
     });
 
     afterAll(async () => {
-        await outbox.dispose();
+        await outbox.terminate();
         await mongoClient.close();
         await mongodb.stop();
     });

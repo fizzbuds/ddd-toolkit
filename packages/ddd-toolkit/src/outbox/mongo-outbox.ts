@@ -5,6 +5,7 @@ import { inspect } from 'util';
 import { difference, intersection } from 'lodash';
 import { IOutbox } from './outbox.interface';
 import { IInit } from '../init.interface';
+import { ITerminate } from '../terminate.interface';
 
 type OutboxEventModel = {
     event: IEvent<unknown>;
@@ -14,7 +15,7 @@ type OutboxEventModel = {
     contextName?: string;
 };
 
-export class MongoOutbox implements IOutbox, IInit {
+export class MongoOutbox implements IOutbox, IInit, ITerminate {
     private outboxCollection: Collection<OutboxEventModel>;
 
     private stopping = false;
@@ -35,7 +36,7 @@ export class MongoOutbox implements IOutbox, IInit {
         void this.checkScheduledEvents([]);
     }
 
-    public async dispose() {
+    public async terminate() {
         this.stopping = true;
         await sleep(this.monitoringIntervalMs);
     }

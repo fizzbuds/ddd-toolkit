@@ -4,6 +4,7 @@ import { ILogger } from '../logger';
 import { inspect } from 'util';
 import { difference, intersection } from 'lodash';
 import { IOutbox } from './outbox.interface';
+import { IInit } from '../init.interface';
 
 type OutboxEventModel = {
     event: IEvent<unknown>;
@@ -13,7 +14,7 @@ type OutboxEventModel = {
     contextName?: string;
 };
 
-export class MongoOutbox implements IOutbox {
+export class MongoOutbox implements IOutbox, IInit {
     private outboxCollection: Collection<OutboxEventModel>;
 
     private stopping = false;

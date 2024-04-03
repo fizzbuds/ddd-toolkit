@@ -25,6 +25,9 @@ describe('MongoAggregateRepo MongoDB Integration', () => {
             new TestSerializer(),
             mongoClient,
             collectionName,
+            undefined,
+            undefined,
+            undefined,
         );
         await aggregateRepo.init();
     });

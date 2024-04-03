@@ -11,7 +11,6 @@ type OutboxEventModel = {
     status: 'scheduled' | 'processing' | 'published';
     publishedAt?: Date;
     contextName?: string;
-    locked?: boolean;
 };
 
 export class MongoOutbox implements IOutbox {
@@ -54,12 +53,18 @@ export class MongoOutbox implements IOutbox {
         return Object.values(insertedIds).map((id) => id.toString());
     }
 
-    public async publishEvents(eventIds: string[]): Promise<void> {
+    public async publishEvents(scheduledEventsIds: string[]): Promise<void> {
         const session = this.mongoClient.startSession();
         try {
             await session.withTransaction(async () => {
                 const outboxModels = await this.outboxCollection
-                    .find({ _id: { $in: eventIds.map((id) => new ObjectId(id)) }, status: 'scheduled' }, { session })
+                    .find(
+                        {
+                            _id: { $in: scheduledEventsIds.map((id) => new ObjectId(id)) },
+                            status: 'scheduled',
+                        },
+                        { session },
+                    )
                     .toArray();
                 if (!outboxModels.length) return;
                 const events = outboxModels.map((model) => model.event);
@@ -78,10 +83,10 @@ export class MongoOutbox implements IOutbox {
                     },
                     { session },
                 );
-                this.logger.debug(`Published events ${eventIds.join(', ')}`);
+                this.logger.debug(`Published events ${publishedIds.join(', ')}`);
             });
         } catch (e) {
-            this.logger.warn(`Failed to publish events ${eventIds.join(', ')}. ${inspect(e)}`);
+            this.logger.warn(`Failed to publish events ${scheduledEventsIds.join(', ')}. ${inspect(e)}`);
         } finally {
             await session.endSession();
         }

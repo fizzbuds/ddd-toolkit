@@ -7,5 +7,5 @@ export interface IOutbox {
 
     scheduleEvents(events: IEvent<unknown>[], transaction: unknown): Promise<string[]>;
 
-    publishEvents(eventIds: string[]): Promise<void>;
+    publishEvents(scheduledEventsIds: string[]): Promise<void>;
 }

@@ -26,7 +26,7 @@ export class MongoAggregateRepoWithOutbox<A, AM extends DocumentWithId>
         super(serializer, mongoClient, collectionName, undefined, repoHooks, logger);
     }
 
-    public async saveAndPublish(aggregate: WithOptionalVersion<A>, eventsToBePublished: IEvent<unknown>[] = []) {
+    public async saveAndPublish(aggregate: WithOptionalVersion<A>, eventsToPublish: IEvent<unknown>[] = []) {
         const aggregateModel = this.serializer.aggregateToModel(aggregate);
         const aggregateVersion = aggregate.__version || 0;
 
@@ -37,7 +37,7 @@ export class MongoAggregateRepoWithOutbox<A, AM extends DocumentWithId>
             await session.withTransaction(async () => {
                 await this.upsertWriteModel(aggregateModel, aggregateVersion, session);
                 await this.handleRepoHooks(aggregateModel, session);
-                scheduledEventIds = await this.outbox.scheduleEvents(eventsToBePublished, session);
+                scheduledEventIds = await this.outbox.scheduleEvents(eventsToPublish, session);
             });
         } catch (e) {
             this.catchSaveTransaction(e, aggregateVersion, aggregateModel);

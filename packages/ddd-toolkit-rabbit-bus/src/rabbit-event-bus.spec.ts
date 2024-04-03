@@ -53,7 +53,7 @@ describe('RabbitEventBus', () => {
         });
 
         describe('When publish an invalid event (not json)', () => {
-            it('should warn', async () => {
+            it('should log with warn level', async () => {
                 rabbitEventBus['connection']['producerChannel'].publish('exchange', 'FooEvent', Buffer.from(''));
                 await rabbitEventBus['connection']['producerChannel'].waitForConfirms();
 
@@ -64,7 +64,7 @@ describe('RabbitEventBus', () => {
         });
 
         describe('When publish an invalid event (without event)', () => {
-            it('should warn', async () => {
+            it('should log with warn level', async () => {
                 rabbitEventBus['connection']['producerChannel'].publish(
                     'exchange',
                     'FooEvent',
@@ -159,7 +159,7 @@ describe('RabbitEventBus', () => {
         });
 
         describe('When publish both Bar and Foo event', () => {
-            it('should call only bar handler', async () => {
+            it('should call both handlers', async () => {
                 await rabbitEventBus.publish(new BarEvent({ bar: 'bar' }));
                 await rabbitEventBus.publish(new FooEvent({ foo: 'doo' }));
 
@@ -182,7 +182,7 @@ describe('RabbitEventBus', () => {
         describe('When publish Foo event', () => {
             const event = new FooEvent({ foo: 'foo' });
 
-            it('should warn', async () => {
+            it('should log with warn level', async () => {
                 await rabbitEventBus.publish(event);
 
                 await waitFor(() =>
@@ -209,7 +209,7 @@ describe('RabbitEventBus', () => {
         });
 
         describe('When publish an event', () => {
-            it('should call the handler', async () => {
+            it('should log with error level', async () => {
                 const event = new FooEvent({ foo: 'foo' });
                 await rabbitEventBus.publish(event);
 

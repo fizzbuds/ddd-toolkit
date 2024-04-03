@@ -27,8 +27,17 @@ export class RabbitEventBus implements IEventBus {
         private readonly queuePrefix: string = '',
         private readonly queueNameFormatter: (handlerName: string) => string = camelCaseToKebabCase,
         private readonly queueExpirationMs: number = 30 * 60000,
+        private readonly deadLetterExchangeName: string = 'dead-letter',
+        private readonly deadLetterQueueName = 'dead-letter-queue',
     ) {
-        this.connection = new RabbitConnection(amqpUrl, exchangeName, consumerPrefetch, logger);
+        this.connection = new RabbitConnection(
+            amqpUrl,
+            exchangeName,
+            consumerPrefetch,
+            logger,
+            deadLetterExchangeName,
+            deadLetterQueueName,
+        );
     }
 
     public async init(): Promise<void> {
@@ -43,6 +52,7 @@ export class RabbitEventBus implements IEventBus {
         await this.connection.getConsumerChannel().assertQueue(queueName, {
             durable: true,
             arguments: { 'x-queue-type': 'quorum', 'x-expires': this.queueExpirationMs },
+            deadLetterExchange: this.deadLetterExchangeName,
         });
 
         this.handlers.push({ eventName: event.name, queueName, handler });

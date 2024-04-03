@@ -20,6 +20,8 @@ export class RabbitConnection {
         private readonly exchangeName: string,
         private readonly prefetch: number,
         private readonly logger: ILogger = console,
+        private readonly deadLetterExchangeName: string,
+        private readonly deadLetterQueueName: string,
     ) {}
 
     public async setupConnection(): Promise<void> {
@@ -40,6 +42,7 @@ export class RabbitConnection {
             await this.setupConsumerChannel();
             await this.setupProducerChannel();
             await this.setupExchanges();
+            await this.setupDqlQueue();
             this.logger.debug('Rabbit connection established');
         } catch (error) {
             this.logger.error(`Error connection ${inspect(error)}`);
@@ -103,11 +106,21 @@ export class RabbitConnection {
     }
 
     private async setupExchanges() {
-        if (!this.producerChannel) {
-            throw new Error('Unable to setup exchange because channel is null');
-        }
+        if (!this.producerChannel) throw new Error('Unable to setup exchange because channel is null');
         await this.producerChannel.assertExchange(this.exchangeName, 'direct', {
             durable: true,
         });
+        await this.producerChannel.assertExchange(this.deadLetterExchangeName, 'topic');
+    }
+
+    private async setupDqlQueue() {
+        if (!this.consumerChannel) throw new Error('Unable to setup dql queue because channel is null');
+        await this.consumerChannel.assertQueue(this.deadLetterQueueName, {
+            durable: true,
+            arguments: {
+                'x-queue-type': 'quorum',
+            },
+        });
+        await this.consumerChannel.bindQueue(this.deadLetterQueueName, this.deadLetterExchangeName, '#');
     }
 }

@@ -78,6 +78,7 @@ export class MongoOutbox implements IOutbox {
                     },
                     { session },
                 );
+                this.logger.debug(`Published events ${eventIds.join(', ')}`);
             });
         } catch (e) {
             this.logger.warn(`Failed to publish events ${eventIds.join(', ')}. ${inspect(e)}`);

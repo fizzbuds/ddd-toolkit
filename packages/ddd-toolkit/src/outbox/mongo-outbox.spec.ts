@@ -2,6 +2,7 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { MongoClient, ObjectId } from 'mongodb';
 import { MongoOutbox } from './mongo-outbox';
 import { Event } from '../event-bus/event';
+import { waitFor } from '../utils';
 
 class FooEvent extends Event<{ foo: string }> {
     constructor(public readonly payload: { foo: string }) {
@@ -145,21 +146,3 @@ describe('Mongo outbox', () => {
         });
     });
 });
-
-async function waitFor(statement: () => Promise<void> | void, timeout = 1000): Promise<void> {
-    const startTime = Date.now();
-
-    let latestStatementError;
-    while (true) {
-        try {
-            await statement();
-            return;
-        } catch (e) {
-            latestStatementError = e;
-        }
-
-        if (Date.now() - startTime > timeout) throw latestStatementError;
-
-        await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-}

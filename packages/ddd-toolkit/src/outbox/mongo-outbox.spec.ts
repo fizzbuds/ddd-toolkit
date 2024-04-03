@@ -50,18 +50,16 @@ describe('Mongo outbox', () => {
     });
 
     describe('When scheduleEvents with two events', () => {
-        it('should return two objectIds', async () => {
-            const events = [new FooEvent({ foo: 'bar' }), new BarEvent({ foo: 'bar' })];
-            const session = mongoClient.startSession();
-            const ids = await outbox.scheduleEvents(events, session);
-            expect(ids.length).toBe(2);
-            expect(ids.every(ObjectId.isValid)).toBe(true);
-        });
-
+        let ids: string[];
         beforeEach(async () => {
             const events = [new FooEvent({ foo: 'bar' }), new BarEvent({ foo: 'bar' })];
             const session = mongoClient.startSession();
-            await outbox.scheduleEvents(events, session);
+            ids = await outbox.scheduleEvents(events, session);
+        });
+
+        it('should return two objectIds', async () => {
+            expect(ids.length).toBe(2);
+            expect(ids.every(ObjectId.isValid)).toBe(true);
         });
 
         it('should insert two events in the outbox', async () => {
@@ -79,10 +77,10 @@ describe('Mongo outbox', () => {
 
     describe('Given two scheduled events', () => {
         const events = [new FooEvent({ foo: 'bar' }), new BarEvent({ foo: 'bar' })];
-        let eventIds: string[];
+        let ids: string[];
         beforeEach(async () => {
             const session = mongoClient.startSession();
-            eventIds = await outbox.scheduleEvents(events, session);
+            ids = await outbox.scheduleEvents(events, session);
         });
 
         describe('Given a resolving publishEventsFn', () => {
@@ -92,25 +90,26 @@ describe('Mongo outbox', () => {
 
             describe('When publish', () => {
                 it('should call publishEventsFn once', async () => {
-                    await outbox.publishEvents(eventIds);
+                    await outbox.publishEvents(ids);
                     expect(PublishEventsFnMock).toBeCalled();
                 });
 
                 it('should pass both events to publishEventsFn', async () => {
-                    await outbox.publishEvents(eventIds);
+                    await outbox.publishEvents(ids);
                     expect(PublishEventsFnMock).toBeCalledWith(events);
                 });
 
                 it('should update the status of the events to published', async () => {
-                    await outbox.publishEvents(eventIds);
+                    await outbox.publishEvents(ids);
                     const events = await outbox['outboxCollection'].find().toArray();
                     expect(events.every((event) => event.status === 'published')).toBe(true);
                 });
 
                 it('should set the publishedAt date', async () => {
-                    await outbox.publishEvents(eventIds);
+                    await outbox.publishEvents(ids);
                     const events = await outbox['outboxCollection'].find().toArray();
                     expect(events[0].publishedAt).toEqual(expect.any(Date));
+                    expect(events[1].publishedAt).toEqual(expect.any(Date));
                 });
             });
         });
@@ -122,12 +121,12 @@ describe('Mongo outbox', () => {
 
             describe('When publish', () => {
                 it('should call publishEventsFn once', async () => {
-                    await outbox.publishEvents(eventIds);
+                    await outbox.publishEvents(ids);
                     expect(PublishEventsFnMock).toBeCalled();
                 });
 
                 it('should not update the status of the events to published', async () => {
-                    await outbox.publishEvents(eventIds);
+                    await outbox.publishEvents(ids);
                     const events = await outbox['outboxCollection'].find().toArray();
                     expect(events.every((event) => event.status === 'scheduled')).toBe(true);
                 });

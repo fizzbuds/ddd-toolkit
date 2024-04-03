@@ -1,5 +1,5 @@
 import { ISerializer } from './serializer.interface';
-import { ClientSession, Collection, MongoClient } from 'mongodb';
+import { Collection, MongoClient } from 'mongodb';
 import { IOutbox } from '../outbox/outbox.interface';
 import { IRepoHooks } from './repo-hooks';
 import { ILogger } from '../logger';
@@ -32,12 +32,12 @@ export class MongoAggregateRepoWithOutbox<A, AM extends DocumentWithId>
 
         const session = this.mongoClient.startSession();
 
-        const scheduledEventIds: string[] = [];
+        let scheduledEventIds: string[] = [];
         try {
             await session.withTransaction(async () => {
                 await this.upsertWriteModel(aggregateModel, aggregateVersion, session);
                 await this.handleRepoHooks(aggregateModel, session);
-                await this.handleOutbox(eventsToBePublished, session);
+                scheduledEventIds = await this.outbox.scheduleEvents(eventsToBePublished, session);
             });
         } catch (e) {
             this.catchSaveTransaction(e, aggregateVersion, aggregateModel);
@@ -45,11 +45,6 @@ export class MongoAggregateRepoWithOutbox<A, AM extends DocumentWithId>
             await session.endSession();
         }
 
-        if (this.outbox && scheduledEventIds.length) void this.outbox.publishEvents(scheduledEventIds);
-    }
-
-    protected async handleOutbox(eventsToBePublished: IEvent<unknown>[], session: ClientSession) {
-        if (!this.outbox) throw new Error('Outbox not configured');
-        return await this.outbox.scheduleEvents(eventsToBePublished, session);
+        void this.outbox.publishEvents(scheduledEventIds);
     }
 }

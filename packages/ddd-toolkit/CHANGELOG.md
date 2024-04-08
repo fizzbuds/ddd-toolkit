@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.2
+
+### Patch Changes
+
+- c9b5375: fix(core): wrong handle return type in ICommandHandler
+
 ## 0.1.1
 
 ### Patch Changes

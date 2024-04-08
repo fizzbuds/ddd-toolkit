@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.1
+
+### Patch Changes
+
+- 82c09b4: fix(core): missing command bus exports
+
 ## 0.1.0
 
 ### Minor Changes

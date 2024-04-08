@@ -9,7 +9,7 @@ export interface ICommandClass<C extends ICommand<unknown, unknown>> {
 }
 
 export interface ICommandHandler<C extends ICommand<unknown, unknown>> {
-    handle: (command: C) => Promise<void>;
+    handle: (command: C) => Promise<C['_returnType']>;
 }
 
 export interface ICommandBus {

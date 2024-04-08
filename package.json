@@ -9,6 +9,7 @@
     "scripts": {
         "build": "pnpm run -r build",
         "test": "pnpm run -r test",
+        "test:ci": "pnpm run -r test:ci",
         "test:coverage": "pnpm run -r test:coverage",
         "prepare": "husky install",
         "check": "pnpm run -r check",

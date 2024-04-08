@@ -6,7 +6,7 @@ import { inspect } from 'util';
 export class LocalCommandBus implements ICommandBus {
     private readonly retryMechanism: IRetryMechanism;
 
-    private handlers: { [key: string]: ICommandHandler<ICommand<unknown>> } = {};
+    private handlers: { [key: string]: ICommandHandler<ICommand<unknown, unknown>> } = {};
 
     constructor(
         private logger: ILogger,
@@ -16,12 +16,15 @@ export class LocalCommandBus implements ICommandBus {
         this.retryMechanism = new ExponentialBackoff(retryInitialDelay);
     }
 
-    public register<C extends ICommand<unknown>>(command: ICommandClass<C>, handler: ICommandHandler<C>): void {
+    public register<C extends ICommand<unknown, unknown>>(
+        command: ICommandClass<C>,
+        handler: ICommandHandler<C>,
+    ): void {
         if (this.handlers[command.name]) throw new Error(`Command ${command.name} is already registered`);
         this.handlers[command.name] = handler;
     }
 
-    public async send<C extends ICommand<unknown>>(command: C): Promise<void> {
+    public async send<C extends ICommand<unknown, unknown>>(command: C): Promise<void> {
         const handler = this.handlers[command.name] as ICommandHandler<C>;
         if (!handler) {
             this.logger.warn(`No handler found for ${command.name}`);
@@ -31,7 +34,17 @@ export class LocalCommandBus implements ICommandBus {
         void this.handleCommand(command, handler);
     }
 
-    private async handleCommand<C extends ICommand<unknown>>(command: C, handler: ICommandHandler<C>, attempt = 0) {
+    public async sendSync<C extends ICommand<unknown, unknown>>(command: C): Promise<C['_returnType']> {
+        const handler = this.handlers[command.name] as ICommandHandler<C>;
+        if (!handler) throw new Error(`No handler found for ${command.name}`);
+        return await handler.handle(command);
+    }
+
+    private async handleCommand<C extends ICommand<unknown, unknown>>(
+        command: C,
+        handler: ICommandHandler<C>,
+        attempt = 0,
+    ) {
         try {
             await handler.handle(command);
         } catch (error) {

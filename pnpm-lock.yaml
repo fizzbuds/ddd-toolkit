@@ -92,11 +92,10 @@ importers:
         version: 5.1.3
 
   packages/ddd-toolkit-rabbit-bus:
-    dependencies:
+    devDependencies:
       '@fizzbuds/ddd-toolkit':
         specifier: workspace:^
         version: link:../ddd-toolkit
-    devDependencies:
       '@types/amqplib':
         specifier: ^0.10.5
         version: 0.10.5

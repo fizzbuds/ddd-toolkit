@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.3
+
+### Patch Changes
+
+- b7f507d: fix(core): missing event bus exports
+
 ## 0.1.2
 
 ### Patch Changes

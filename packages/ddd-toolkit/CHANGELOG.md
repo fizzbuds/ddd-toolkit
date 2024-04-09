@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.4
+
+### Patch Changes
+
+- efa24d4: feat(core): add simple query bus
+
 ## 0.1.3
 
 ### Patch Changes

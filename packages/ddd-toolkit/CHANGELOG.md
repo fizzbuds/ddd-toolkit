@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.5
+
+### Patch Changes
+
+- 00c5db8: fix(core): wrong optional result type in query
+
 ## 0.1.4
 
 ### Patch Changes

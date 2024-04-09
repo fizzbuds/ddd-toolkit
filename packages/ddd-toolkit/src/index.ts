@@ -5,5 +5,6 @@ export * from './errors';
 export * from './repo/mongo-query-repo';
 export * from './event-bus/event-bus.interface';
 export * from './repo/mongo-aggregate-repo-with-outbox';
+export * from './query-bus';
 export * from './command-bus';
 export * from './event-bus';

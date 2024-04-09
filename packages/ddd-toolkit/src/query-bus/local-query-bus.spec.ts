@@ -2,13 +2,13 @@ import { LocalQueryBus, Query } from './../';
 import { loggerMock } from '../logger';
 import { waitFor } from '../utils';
 
-class FooQuery extends Query<{ foo: string }> {
+class FooQuery extends Query<{ foo: string }, any> {
     constructor(public readonly payload: { foo: string }) {
         super(payload);
     }
 }
 
-class BarQuery extends Query<{ foo: string }> {
+class BarQuery extends Query<{ foo: string }, any> {
     constructor(public readonly payload: { foo: string }) {
         super(payload);
     }

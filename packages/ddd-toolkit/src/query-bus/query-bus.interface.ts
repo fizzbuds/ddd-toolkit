@@ -1,4 +1,4 @@
-export interface IQuery<TPayload, TResult = void> {
+export interface IQuery<TPayload, TResult> {
     name: string;
     payload: TPayload;
     _resultType: TResult;
@@ -9,7 +9,7 @@ export interface IQueryClass<Q extends IQuery<unknown, unknown>> {
 }
 
 export interface IQueryHandler<Q extends IQuery<unknown, unknown>> {
-    handle: (query: Q) => Promise<void>;
+    handle: (query: Q) => Promise<Q['_resultType']>;
 }
 
 export interface IQueryBus {

@@ -1,6 +1,6 @@
 import { IQuery } from './query-bus.interface';
 
-export abstract class Query<TPayload, TResult = void> implements IQuery<TPayload, TResult> {
+export abstract class Query<TPayload, TResult> implements IQuery<TPayload, TResult> {
     readonly name: string;
     readonly _resultType: TResult;
 

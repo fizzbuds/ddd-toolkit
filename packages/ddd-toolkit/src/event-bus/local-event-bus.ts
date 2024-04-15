@@ -10,8 +10,8 @@ export class LocalEventBus implements IEventBus {
 
     constructor(
         private logger: ILogger,
-        private readonly retryMaxAttempts = 5,
-        retryInitialDelay = 100,
+        private readonly retryMaxAttempts = 0,
+        retryInitialDelay = 500,
     ) {
         this.retryMechanism = new ExponentialBackoff(retryInitialDelay);
     }

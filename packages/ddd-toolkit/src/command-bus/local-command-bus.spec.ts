@@ -152,4 +152,9 @@ describe('LocalCommandBus', () => {
             });
         });
     });
+
+    it('default retry max attempts should be 0', () => {
+        const commandBus = new LocalCommandBus(loggerMock);
+        expect(commandBus['retryMaxAttempts']).toBe(0);
+    });
 });

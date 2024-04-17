@@ -1,6 +1,6 @@
 import { ILogger } from '../logger';
 import { ICommand, ICommandBus, ICommandClass, ICommandHandler } from './command-bus.interface';
-import { ExponentialBackoff, IRetryMechanism } from '../event-bus/exponential-backoff';
+import { ExponentialBackoff, IRetryMechanism } from '../event-bus';
 import { inspect } from 'util';
 
 export class LocalCommandBus implements ICommandBus {
@@ -10,8 +10,8 @@ export class LocalCommandBus implements ICommandBus {
 
     constructor(
         private logger: ILogger,
-        private readonly retryMaxAttempts = 5,
-        retryInitialDelay = 100,
+        private readonly retryMaxAttempts = 0,
+        retryInitialDelay = 500,
     ) {
         this.retryMechanism = new ExponentialBackoff(retryInitialDelay);
     }

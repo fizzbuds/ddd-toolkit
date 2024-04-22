@@ -49,7 +49,7 @@ export class RabbitEventBus implements IEventBus {
         if (this.handlers.find((h) => h.queueName === queueName))
             throw new Error(`Handler ${handler.constructor.name} already exists`);
 
-        await this.connection.getConsumerChannel().assertQueue(queueName, {
+        await this.connection.getChannel().assertQueue(queueName, {
             durable: true,
             arguments: { 'x-queue-type': 'quorum', 'x-expires': this.queueExpirationMs },
             deadLetterExchange: this.deadLetterExchangeName,
@@ -57,15 +57,15 @@ export class RabbitEventBus implements IEventBus {
 
         this.handlers.push({ eventName: event.name, queueName, handler });
 
-        await this.connection.getConsumerChannel().consume(queueName, (msg) => this.onMessage(msg, queueName));
-        await this.connection.getConsumerChannel().bindQueue(queueName, this.exchangeName, event.name);
+        await this.connection.getChannel().consume(queueName, (msg) => this.onMessage(msg, queueName));
+        await this.connection.getChannel().bindQueue(queueName, this.exchangeName, event.name);
     }
 
     public async publish<T extends IEvent<unknown>>(event: T): Promise<void> {
         const serializedEvent = JSON.stringify(event);
         const message = Buffer.from(serializedEvent);
-        this.connection.getProducerChannel().publish(this.exchangeName, event.name, message);
-        await this.connection.getProducerChannel().waitForConfirms();
+        this.connection.getChannel().publish(this.exchangeName, event.name, message);
+        await this.connection.getChannel().waitForConfirms();
     }
 
     public async terminate(): Promise<void> {
@@ -79,13 +79,13 @@ export class RabbitEventBus implements IEventBus {
         try {
             parsedMessage = JSON.parse(rawMessage.content.toString());
         } catch (e) {
-            this.connection.getConsumerChannel().nack(rawMessage, false, false);
+            this.connection.getChannel().nack(rawMessage, false, false);
             this.logger.warn(`Message discarded due to invalid format (not json)`);
             return;
         }
 
         if (!this.isAValidMessage(parsedMessage)) {
-            this.connection.getConsumerChannel().nack(rawMessage, false, false);
+            this.connection.getChannel().nack(rawMessage, false, false);
             this.logger.warn(`Message discarded due to invalid format`);
             return;
         }
@@ -95,23 +95,23 @@ export class RabbitEventBus implements IEventBus {
         const handler = this.handlers.find((h) => h.eventName === event.name && h.queueName === queueName)?.handler;
 
         if (!handler) {
-            this.connection.getConsumerChannel().nack(rawMessage, false, false);
+            this.connection.getChannel().nack(rawMessage, false, false);
             this.logger.warn(`Message discarded due to missing handler for ${event.name}`);
             return;
         }
 
         try {
             await handler.handle(event);
-            this.connection.getConsumerChannel().ack(rawMessage);
+            this.connection.getChannel().ack(rawMessage);
         } catch (e) {
             this.logger.warn(`Error handling message due ${inspect(e)}`);
             const deliveryCount = rawMessage.properties.headers?.['x-delivery-count'] || 0;
             if (deliveryCount < this.maxAttempts) {
                 await new Promise((resolve) => setTimeout(resolve, this.exponentialBackoff.getDelay(deliveryCount)));
-                this.connection.getConsumerChannel().nack(rawMessage, false, true);
+                this.connection.getChannel().nack(rawMessage, false, true);
                 this.logger.warn(`Message re-queued due ${inspect(e)}`);
             } else {
-                this.connection.getConsumerChannel().nack(rawMessage, false, false);
+                this.connection.getChannel().nack(rawMessage, false, false);
                 this.logger.error(`Message sent to dlq due ${inspect(e)}`);
             }
         }

@@ -54,8 +54,8 @@ describe('RabbitEventBus', () => {
 
         describe('When publish an invalid event (not json)', () => {
             it('should log with warn level', async () => {
-                rabbitEventBus['connection']['producerChannel'].publish('exchange', 'FooEvent', Buffer.from(''));
-                await rabbitEventBus['connection']['producerChannel'].waitForConfirms();
+                rabbitEventBus['connection']['channel'].publish('exchange', 'FooEvent', Buffer.from(''));
+                await rabbitEventBus['connection']['channel'].waitForConfirms();
 
                 await waitFor(() =>
                     expect(loggerMock.warn).toBeCalledWith('Message discarded due to invalid format (not json)'),
@@ -65,12 +65,12 @@ describe('RabbitEventBus', () => {
 
         describe('When publish an invalid event (without event)', () => {
             it('should log with warn level', async () => {
-                rabbitEventBus['connection']['producerChannel'].publish(
+                rabbitEventBus['connection']['channel'].publish(
                     'exchange',
                     'FooEvent',
                     Buffer.from(JSON.stringify({})),
                 );
-                await rabbitEventBus['connection']['producerChannel'].waitForConfirms();
+                await rabbitEventBus['connection']['channel'].waitForConfirms();
 
                 await waitFor(() => expect(loggerMock.warn).toBeCalledWith('Message discarded due to invalid format'));
             });

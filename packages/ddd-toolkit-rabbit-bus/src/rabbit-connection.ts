@@ -1,4 +1,4 @@
-import { Channel, ConfirmChannel, connect, Connection } from 'amqplib';
+import { ConfirmChannel, connect, Connection } from 'amqplib';
 import { ILogger } from '@fizzbuds/ddd-toolkit';
 import { inspect } from 'util';
 
@@ -9,8 +9,7 @@ export class RabbitConnection {
     private static RECONNECTION_TIMEOUT = 2000;
 
     private connection: Connection;
-    private consumerChannel: Channel;
-    private producerChannel: ConfirmChannel;
+    private channel: ConfirmChannel;
 
     private waiting = false;
     private stopping = false;
@@ -39,8 +38,7 @@ export class RabbitConnection {
                 this.logger.debug(`Connection with rabbit closed with ${inspect(reason)} try to reconnect`);
                 this.scheduleReconnection();
             });
-            await this.setupConsumerChannel();
-            await this.setupProducerChannel();
+            await this.setupChannel();
             await this.setupExchanges();
             await this.setupDqlQueue();
             this.logger.debug('Rabbit connection established');
@@ -50,19 +48,14 @@ export class RabbitConnection {
         }
     }
 
-    public getConsumerChannel(): Channel {
-        return this.consumerChannel;
-    }
-
-    public getProducerChannel(): ConfirmChannel {
-        return this.producerChannel;
+    public getChannel(): ConfirmChannel {
+        return this.channel;
     }
 
     public async terminate() {
         this.logger.debug('Stopping rabbit connection');
         this.stopping = true;
-        await this.producerChannel?.close();
-        await this.consumerChannel?.close();
+        await this.channel?.close();
         await this.connection?.close();
         this.logger.debug('Rabbit connection stopped');
     }
@@ -84,43 +77,34 @@ export class RabbitConnection {
         }, RabbitConnection.RECONNECTION_TIMEOUT);
     }
 
-    private async setupConsumerChannel() {
-        this.consumerChannel = await this.connection.createConfirmChannel();
-        await this.consumerChannel.prefetch(this.prefetch);
+    private async setupChannel() {
+        this.channel = await this.connection.createConfirmChannel();
+        await this.channel.prefetch(this.prefetch);
 
-        this.consumerChannel.on('error', async (err) => {
+        this.channel.on('error', async (err) => {
             if (!this.stopping) return;
             this.logger.error(`Consumer channel with rabbit closed with ${inspect(err)} try to recreate`);
             await new Promise((resolve) => setTimeout(resolve, RabbitConnection.RECONNECTION_TIMEOUT));
-            await this.setupConsumerChannel();
-        });
-    }
-
-    private async setupProducerChannel() {
-        this.producerChannel = await this.connection.createConfirmChannel();
-        this.producerChannel.on('error', async (err) => {
-            this.logger.error(`Producer channel with rabbit closed with ${inspect(err)} try to recreate`);
-            await new Promise((resolve) => setTimeout(resolve, RabbitConnection.RECONNECTION_TIMEOUT));
-            await this.setupProducerChannel();
+            await this.setupChannel();
         });
     }
 
     private async setupExchanges() {
-        if (!this.producerChannel) throw new Error('Unable to setup exchange because channel is null');
-        await this.producerChannel.assertExchange(this.exchangeName, 'direct', {
+        if (!this.channel) throw new Error('Unable to setup exchange because channel is null');
+        await this.channel.assertExchange(this.exchangeName, 'direct', {
             durable: true,
         });
-        await this.producerChannel.assertExchange(this.deadLetterExchangeName, 'topic');
+        await this.channel.assertExchange(this.deadLetterExchangeName, 'topic');
     }
 
     private async setupDqlQueue() {
-        if (!this.consumerChannel) throw new Error('Unable to setup dql queue because channel is null');
-        await this.consumerChannel.assertQueue(this.deadLetterQueueName, {
+        if (!this.channel) throw new Error('Unable to setup dql queue because channel is null');
+        await this.channel.assertQueue(this.deadLetterQueueName, {
             durable: true,
             arguments: {
                 'x-queue-type': 'quorum',
             },
         });
-        await this.consumerChannel.bindQueue(this.deadLetterQueueName, this.deadLetterExchangeName, '#');
+        await this.channel.bindQueue(this.deadLetterQueueName, this.deadLetterExchangeName, '#');
     }
 }

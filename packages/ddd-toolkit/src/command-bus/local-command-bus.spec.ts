@@ -1,8 +1,15 @@
 import { LocalCommandBus } from './local-command-bus';
 import { Command } from './command';
-import { loggerMock } from '../logger';
 import { waitFor } from '../utils';
 import { ICommandHandler } from './command-bus.interface';
+import { ILogger } from '../logger';
+
+const loggerMock: ILogger = {
+    log: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+};
 
 class FooCommand extends Command<{ foo: string }, { ok: boolean }> {
     constructor(public readonly payload: { foo: string }) {

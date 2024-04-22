@@ -1,6 +1,12 @@
-import { LocalQueryBus, Query } from './../';
-import { loggerMock } from '../logger';
+import { ILogger, LocalQueryBus, Query } from './../';
 import { waitFor } from '../utils';
+
+const loggerMock: ILogger = {
+    log: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+};
 
 class FooQuery extends Query<{ foo: string }, any> {
     constructor(public readonly payload: { foo: string }) {

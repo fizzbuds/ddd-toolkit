@@ -1,6 +1,13 @@
 import { collectionMock, mongoClientMock } from './mongo.mock';
 import { MongoQueryRepo } from '../mongo-query-repo';
-import { loggerMock } from '../../logger';
+import { ILogger } from '../../logger';
+
+const loggerMock: ILogger = {
+    log: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+};
 
 interface TestQueryModel {
     id: string;

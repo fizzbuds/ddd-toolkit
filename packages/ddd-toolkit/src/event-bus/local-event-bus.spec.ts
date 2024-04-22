@@ -1,7 +1,14 @@
 import { LocalEventBus } from './local-event-bus';
 import { Event } from './event';
-import { loggerMock } from '../logger';
+import { ILogger } from '../logger';
 import { sleep, waitFor } from '../utils';
+
+const loggerMock: ILogger = {
+    log: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+};
 
 class FooEvent extends Event<{ foo: string }> {
     constructor(public readonly payload: { foo: string }) {

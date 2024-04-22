@@ -4,10 +4,3 @@ export interface ILogger {
     warn: (message: string, ...optionalParams: any[]) => void;
     error: (message: string, ...optionalParams: any[]) => void;
 }
-
-export const loggerMock: ILogger = {
-    log: jest.fn(),
-    debug: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-};

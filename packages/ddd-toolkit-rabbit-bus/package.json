@@ -12,7 +12,8 @@
         "test": "jest",
         "test:ci": "jest --coverage --runInBand",
         "test:coverage": "jest --coverage",
-        "check": "cspell lint --quiet src"
+        "check": "cspell lint --quiet src",
+        "prepublishOnly": "pnpm run build"
     },
     "dependencies": {},
     "peerDependencies": {

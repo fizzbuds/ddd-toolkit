@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.7
+
+### Patch Changes
+
+- 286ec16: remove loggermock exports
+
 ## 0.1.6
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit-rabbit-bus
 
+## 1.0.3
+
+### Patch Changes
+
+- 56cc1c6: add prepublishOnly script
+
 ## 1.0.2
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit-rabbit-bus
 
+## 1.0.4
+
+### Patch Changes
+
+- 6a6a038: unifies producer and consumer channel
+
 ## 1.0.3
 
 ### Patch Changes

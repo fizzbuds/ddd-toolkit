@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.6
+
+### Patch Changes
+
+- 26611dc: add logger export
+
 ## 0.1.5
 
 ### Patch Changes

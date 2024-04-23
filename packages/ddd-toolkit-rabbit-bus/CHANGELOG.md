@@ -1,5 +1,12 @@
 # @fizzbuds/ddd-toolkit-rabbit-bus
 
+## 1.0.7
+
+### Patch Changes
+
+- Updated dependencies [a799318]
+  - @fizzbuds/ddd-toolkit@0.1.9
+
 ## 1.0.6
 
 ### Patch Changes

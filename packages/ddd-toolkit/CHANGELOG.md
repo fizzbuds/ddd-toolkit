@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.9
+
+### Patch Changes
+
+- a799318: fix(core): wrong behaviour on handlers failing in local-event-bus with publishAndWaitForHandlers method
+
 ## 0.1.8
 
 ### Patch Changes

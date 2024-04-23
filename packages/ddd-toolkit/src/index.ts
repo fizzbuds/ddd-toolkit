@@ -9,3 +9,4 @@ export * from './repo/mongo-aggregate-repo-with-outbox';
 export * from './query-bus';
 export * from './command-bus';
 export * from './event-bus';
+export * from './outbox';

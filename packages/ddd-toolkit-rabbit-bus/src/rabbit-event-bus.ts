@@ -59,6 +59,9 @@ export class RabbitEventBus implements IEventBus {
 
         await this.connection.getChannel().consume(queueName, (msg) => this.onMessage(msg, queueName));
         await this.connection.getChannel().bindQueue(queueName, this.exchangeName, event.name);
+        this.logger.debug(
+            `Handler ${handler.constructor.name} subscribed to event ${event.name} on queue ${queueName}`,
+        );
     }
 
     public async publish<T extends IEvent<unknown>>(event: T): Promise<void> {
@@ -66,6 +69,7 @@ export class RabbitEventBus implements IEventBus {
         const message = Buffer.from(serializedEvent);
         this.connection.getChannel().publish(this.exchangeName, event.name, message);
         await this.connection.getChannel().waitForConfirms();
+        this.logger.debug(`Event ${event.name} published. ${serializedEvent}`);
     }
 
     public async terminate(): Promise<void> {
@@ -103,6 +107,7 @@ export class RabbitEventBus implements IEventBus {
         try {
             await handler.handle(event);
             this.connection.getChannel().ack(rawMessage);
+            this.logger.debug(`Event ${event.name} handled by ${handler.constructor.name} successfully`);
         } catch (e) {
             this.logger.warn(`Error handling message due ${inspect(e)}`);
             const deliveryCount = rawMessage.properties.headers?.['x-delivery-count'] || 0;

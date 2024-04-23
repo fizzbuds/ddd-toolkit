@@ -41,7 +41,7 @@ export class RabbitConnection {
             await this.setupChannel();
             await this.setupExchanges();
             await this.setupDqlQueue();
-            this.logger.debug('Rabbit connection established');
+            this.logger.debug(`Rabbit connection established`);
         } catch (error) {
             this.logger.error(`Error connection ${inspect(error)}`);
             throw error;
@@ -80,6 +80,7 @@ export class RabbitConnection {
     private async setupChannel() {
         this.channel = await this.connection.createConfirmChannel();
         await this.channel.prefetch(this.prefetch);
+        this.logger.debug(`Channel created with prefetch ${this.prefetch}`);
 
         this.channel.on('error', async (err) => {
             if (!this.stopping) return;
@@ -95,6 +96,7 @@ export class RabbitConnection {
             durable: true,
         });
         await this.channel.assertExchange(this.deadLetterExchangeName, 'topic');
+        this.logger.debug(`Exchange ${this.exchangeName} asserted`);
     }
 
     private async setupDqlQueue() {
@@ -106,5 +108,6 @@ export class RabbitConnection {
             },
         });
         await this.channel.bindQueue(this.deadLetterQueueName, this.deadLetterExchangeName, '#');
+        this.logger.debug(`Dlq ${this.deadLetterQueueName} asserted`);
     }
 }

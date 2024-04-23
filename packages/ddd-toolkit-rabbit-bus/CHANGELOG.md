@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit-rabbit-bus
 
+## 1.0.5
+
+### Patch Changes
+
+- f5c753b: better logging
+
 ## 1.0.4
 
 ### Patch Changes

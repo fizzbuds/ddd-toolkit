@@ -42,6 +42,7 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
     }
 
     public async scheduleEvents(events: IEvent<unknown>[], clientSession: ClientSession): Promise<string[]> {
+        if (!events.length) return [];
         const { insertedIds } = await this.outboxCollection.insertMany(
             events.map((event) => ({
                 event,

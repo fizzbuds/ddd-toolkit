@@ -144,4 +144,11 @@ describe('Mongo outbox', () => {
             });
         });
     });
+
+    describe('When scheduleEvents with 0 events', () => {
+        it('should not throw', async () => {
+            const session = mongoClient.startSession();
+            await outbox.scheduleEvents([], session);
+        });
+    });
 });

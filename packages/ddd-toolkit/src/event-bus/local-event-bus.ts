@@ -2,6 +2,7 @@ import { inspect } from 'util';
 import { ILogger } from '../logger';
 import { IEvent, IEventBus, IEventClass, IEventHandler } from './event-bus.interface';
 import { ExponentialBackoff, IRetryMechanism } from './exponential-backoff';
+import { sleep } from '../utils';
 
 export class LocalEventBus implements IEventBus {
     private readonly retryMechanism: IRetryMechanism;
@@ -38,10 +39,10 @@ export class LocalEventBus implements IEventBus {
             return;
         }
 
-        await this.handleEvent(event, handlers);
+        await this.handleEventSync(event, handlers);
     }
 
-    private async handleEvent<T extends IEvent<unknown>>(event: T, handlers: IEventHandler<T>[], attempt = 0) {
+    private async handleEvent<T extends IEvent<unknown>>(event: T, handlers: IEventHandler<T>[], attempt = 1) {
         const results = await Promise.allSettled(handlers.map((handler) => handler.handle(event)));
         results.forEach((result, index) => {
             if (result.status === 'fulfilled') return;
@@ -60,5 +61,28 @@ export class LocalEventBus implements IEventBus {
             }
             this.logger.error(`${handlerName} failed to handle ${event.name} event due to ${inspect(result.reason)}`);
         });
+    }
+
+    private async handleEventSync<T extends IEvent<unknown>>(event: T, handlers: IEventHandler<T>[], attempt = 1) {
+        const results = await Promise.allSettled(handlers.map((handler) => handler.handle(event)));
+        for (const [index, result] of results.entries()) {
+            if (result.status === 'fulfilled') continue;
+
+            const handler = handlers[index];
+            const handlerName = handler.constructor.name;
+
+            if (attempt < this.retryMaxAttempts) {
+                const nextAttempt = attempt + 1;
+                const delay = this.retryMechanism.getDelay(nextAttempt);
+                this.logger.warn(
+                    `${handlerName} failed to handle ${event.name} event. Attempt ${nextAttempt}/${this.retryMaxAttempts}. Delaying for ${delay}ms.`,
+                );
+                await sleep(delay);
+                await this.handleEventSync(event, [handler], nextAttempt);
+                continue;
+            }
+
+            throw new Error(`${handlerName} failed to handle ${event.name} event due to ${inspect(result.reason)}`);
+        }
     }
 }

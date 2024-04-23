@@ -158,7 +158,6 @@ describe('LocalEventBus', () => {
             class FooEventHandlerKo {
                 async handle(event: FooEvent) {
                     await handlerKoMock(event);
-                    throw new Error('ko');
                 }
             }
 
@@ -180,6 +179,11 @@ describe('LocalEventBus', () => {
                     await eventBus.publish(event);
                     expect(handlerOkMock).toBeCalledWith(event);
                     expect(handlerKoMock).toBeCalledWith(event);
+
+                    await waitFor(() => {
+                        expect(handlerOkMock).toBeCalledTimes(1);
+                        expect(handlerKoMock).toBeCalledTimes(1);
+                    });
                 });
 
                 it('should log error for failing handler', async () => {
@@ -189,6 +193,25 @@ describe('LocalEventBus', () => {
                             expect.stringContaining('HandlerKo failed to handle FooEvent event'),
                         ),
                     );
+                });
+            });
+
+            describe('When publishAndWaitForHandlers event', () => {
+                const event = new FooEvent({ foo: 'bar' });
+
+                it('publish throw an exception', async () => {
+                    await expect(() => eventBus.publishAndWaitForHandlers(event)).rejects.toThrow();
+                });
+
+                it('both handler should be called', async () => {
+                    try {
+                        await eventBus.publishAndWaitForHandlers(event);
+                    } catch {}
+                    expect(handlerOkMock).toBeCalledWith(event);
+                    expect(handlerKoMock).toBeCalledWith(event);
+
+                    expect(handlerOkMock).toBeCalledTimes(1);
+                    expect(handlerKoMock).toBeCalledTimes(3);
                 });
             });
         });
@@ -227,11 +250,31 @@ describe('LocalEventBus', () => {
 
                 it('should log one retry for failing handler', async () => {
                     await waitFor(() => {
+                        expect(handlerMock).toBeCalledTimes(2); // needed to wait for the second call to be done
                         expect(loggerMock.warn).toBeCalledTimes(1);
                         expect(loggerMock.warn).toBeCalledWith(
-                            expect.stringContaining('FooEventHandlerOk failed to handle FooEvent event. Attempt 1/3'),
+                            expect.stringContaining('FooEventHandlerOk failed to handle FooEvent event. Attempt 2/3'),
                         );
                     });
+                });
+            });
+
+            describe('When publishAndWaitForHandlers event', () => {
+                const event = new FooEvent({ foo: 'bar' });
+
+                beforeEach(async () => {
+                    await eventBus.publishAndWaitForHandlers(event);
+                });
+
+                it('handler should be called two times', async () => {
+                    expect(handlerMock).toBeCalledTimes(2);
+                });
+
+                it('should log one retry for failing handler', async () => {
+                    expect(loggerMock.warn).toBeCalledTimes(1);
+                    expect(loggerMock.warn).toBeCalledWith(
+                        expect.stringContaining('FooEventHandlerOk failed to handle FooEvent event. Attempt 2/3'),
+                    );
                 });
             });
         });

@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.10
+
+### Patch Changes
+
+- b2b81e8: fix(core): wrong outbox scheduleEvents behaviour with 0 events
+
 ## 0.1.9
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.8
+
+### Patch Changes
+
+- d6e623b: fix(core): add missing outbox exports
+
 ## 0.1.7
 
 ### Patch Changes

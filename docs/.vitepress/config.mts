@@ -32,7 +32,7 @@ export default defineConfig({
         ],
 
         footer: {
-            copyright: 'Copyright © Gabriele Toselli, Luca Giovenzana and contributors.',
+            copyright: 'Copyright © <a href="https://www.linkedin.com/in/toselli-gabriele/" target="_blank">Gabriele Toselli</a>, <a href="https://www.linkedin.com/in/lucagiovenzana/" target="_blank">Luca Giovenzana</a> and contributors.',
         },
 
         lastUpdated: {

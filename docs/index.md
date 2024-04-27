@@ -4,11 +4,11 @@ layout: home
 
 hero:
   name: "ddd-toolkit"
-  text: "Pragmatic approach to tactical DDD patterns"
+  text: "Pragmatic approach to tactical DDD patterns in typescript."
   image:
     src: /logo.jpeg
     alt: logo
-  tagline: Well begun is half done 💎
+  tagline: Well begun is half done
   actions:
     - theme: brand
       text: Getting Started

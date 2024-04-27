@@ -23,6 +23,10 @@ export default defineConfig({
                 text: 'Components',
                 items: [
                     { text: 'Aggregate repo', link: '/aggregate-repo' },
+                    {
+                        text: 'Command bus',
+                        link: '/command-bus',
+                    },
                 ],
             },
         ],

@@ -10,3 +10,5 @@ export * from './query-bus';
 export * from './command-bus';
 export * from './event-bus';
 export * from './outbox';
+export * from './init.interface';
+export * from './terminate.interface';

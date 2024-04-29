@@ -21,6 +21,14 @@ jobs:
           RABBITMQ_DEFAULT_PASS: guest
         ports:
           - 5672:5672
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: guest
+          POSTGRES_PASSWORD: guest
+          POSTGRES_DB: guest
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
 

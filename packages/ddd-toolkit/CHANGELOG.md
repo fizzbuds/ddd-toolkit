@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.1.11
+
+### Patch Changes
+
+- 6985ff0: add mongodb 6
+
 ## 0.1.10
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit-rabbit-bus
 
+## 1.0.10
+
+### Patch Changes
+
+- 31c206b: remove wrong mongodb dependency
+
 ## 1.0.9
 
 ### Patch Changes

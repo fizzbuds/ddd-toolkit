@@ -88,6 +88,8 @@ export class RabbitEventBus implements IEventBus {
             return;
         }
 
+        this.logger.debug(`Received message ${rawMessage.content.toString()} on queue ${queueName}`);
+
         if (!this.isAValidMessage(parsedMessage)) {
             this.connection.getChannel().nack(rawMessage, false, false);
             this.logger.warn(`Message discarded due to invalid format`);

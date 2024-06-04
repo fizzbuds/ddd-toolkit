@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit-rabbit-bus
 
+## 1.0.11
+
+### Patch Changes
+
+- f9068ad: add log on message cb
+
 ## 1.0.10
 
 ### Patch Changes

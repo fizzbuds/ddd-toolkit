@@ -36,14 +36,17 @@ export class LocalCommandBus<TContext = void> implements ICommandBus<TContext> {
         void this.handleCommand(command, handler);
     }
 
-    public async sendSync<C extends ICommand<unknown, unknown>>(command: C): Promise<C['_returnType']> {
+    public async sendSync<C extends ICommand<unknown, unknown>>(
+        command: C,
+        context?: TContext,
+    ): Promise<C['_returnType']> {
         const handler = this.handlers[command.name] as ICommandHandler<C, TContext>;
         if (!handler) throw new Error(`No handler found for ${command.name}`);
 
         return this.contextManager
             ? await this.contextManager.wrapWithContext(async (context) => {
                   return await handler.handle(command, context);
-              })
+              }, context)
             : await handler.handle(command);
     }
 

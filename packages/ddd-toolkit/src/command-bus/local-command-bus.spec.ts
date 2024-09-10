@@ -165,8 +165,11 @@ describe('LocalCommandBus', () => {
         let commandBus: LocalCommandBus<TContext>;
 
         class FooContextManager implements IContextManager<TContext> {
-            public async wrapWithContext<T>(operation: (context: TContext) => Promise<T>): Promise<T> {
-                const context: TContext = { contextKey: 'foo-bar' };
+            public async wrapWithContext<T>(
+                operation: (context: TContext) => Promise<T>,
+                existingContext: TContext,
+            ): Promise<T> {
+                const context: TContext = existingContext || { contextKey: 'foo-context' };
                 return await operation(context);
             }
         }
@@ -193,11 +196,42 @@ describe('LocalCommandBus', () => {
             });
 
             describe('When sendSync a foo command', () => {
-                it('context should be passed to command', async () => {
+                it('context should be passed to command handler', async () => {
                     const command = new FooCommand({ foo: 'bar' });
                     await commandBus.sendSync(command);
 
-                    expect(FooHandlerMock).toHaveBeenCalledWith([command, { contextKey: 'foo-bar' }]);
+                    expect(FooHandlerMock).toHaveBeenCalledWith([command, { contextKey: 'foo-context' }]);
+                });
+            });
+
+            describe('When sendSync a foo command with existing context', () => {
+                it('context should be passed to command handler', async () => {
+                    const command = new FooCommand({ foo: 'bar' });
+                    await commandBus.sendSync(command, { contextKey: 'bar-context' });
+
+                    expect(FooHandlerMock).toHaveBeenCalledWith([command, { contextKey: 'bar-context' }]);
+                });
+            });
+        });
+
+        describe('Given one registered failing handler to foo command', () => {
+            const FooHandlerMock = jest.fn();
+
+            class FooCommandHandler implements ICommandHandler<FooCommand> {
+                async handle(...args: unknown[]) {
+                    return await FooHandlerMock(args);
+                }
+            }
+
+            beforeEach(() => {
+                FooHandlerMock.mockRejectedValue(new Error('ko'));
+                commandBus.register(FooCommand, new FooCommandHandler());
+            });
+
+            describe('When sendSync a foo command', () => {
+                it('should throw', async () => {
+                    const command = new FooCommand({ foo: 'bar' });
+                    await expect(() => commandBus.sendSync(command)).rejects.toThrow();
                 });
             });
         });

@@ -8,12 +8,15 @@ export interface ICommandClass<C extends ICommand<unknown, unknown>> {
     new (payload: unknown): C;
 }
 
-export interface ICommandHandler<C extends ICommand<unknown, unknown>> {
-    handle: (command: C) => Promise<C['_returnType']>;
+export interface ICommandHandler<C extends ICommand<unknown, unknown>, TContext = void> {
+    handle: (command: C, context?: TContext) => Promise<C['_returnType']>;
 }
 
-export interface ICommandBus {
-    register<C extends ICommand<unknown, unknown>>(command: ICommandClass<C>, handler: ICommandHandler<C>): void;
+export interface ICommandBus<TContext> {
+    register<C extends ICommand<unknown, unknown>>(
+        command: ICommandClass<C>,
+        handler: ICommandHandler<C, TContext>,
+    ): void;
 
     send<C extends ICommand<unknown, unknown>>(command: C): Promise<void>;
 }

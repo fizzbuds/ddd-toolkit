@@ -3,6 +3,7 @@ import { Command } from './command';
 import { waitFor } from '../utils';
 import { ICommandHandler } from './command-bus.interface';
 import { ILogger } from '../logger';
+import { IContextManager } from './context-manager.interface';
 
 const loggerMock: ILogger = {
     log: jest.fn(),
@@ -24,15 +25,13 @@ class BarCommand extends Command<{ foo: string }> {
 }
 
 describe('LocalCommandBus', () => {
+    afterEach(() => jest.resetAllMocks());
+
     describe('Given an command bus', () => {
-        let commandBus: LocalCommandBus;
+        let commandBus: LocalCommandBus<unknown>;
 
         beforeEach(() => {
             commandBus = new LocalCommandBus(loggerMock, 3, 100);
-        });
-
-        afterEach(() => {
-            jest.resetAllMocks();
         });
 
         describe('Given no registered handler to foo command', () => {
@@ -155,6 +154,50 @@ describe('LocalCommandBus', () => {
                             ),
                         );
                     });
+                });
+            });
+        });
+    });
+
+    describe('Given a command bus with context manager', () => {
+        type TContext = { contextKey: string };
+
+        let commandBus: LocalCommandBus<TContext>;
+
+        class FooContextManager implements IContextManager<TContext> {
+            public async wrapWithContext<T>(operation: (context: TContext) => Promise<T>): Promise<T> {
+                const context: TContext = { contextKey: 'foo-bar' };
+                return await operation(context);
+            }
+        }
+
+        beforeEach(() => {
+            commandBus = new LocalCommandBus(loggerMock, 3, 100, new FooContextManager());
+        });
+
+        it('should be defined', () => {
+            expect(commandBus).toBeDefined();
+        });
+
+        describe('Given one registered handler to foo command', () => {
+            const FooHandlerMock = jest.fn();
+
+            class FooCommandHandler implements ICommandHandler<FooCommand> {
+                async handle(...args: unknown[]) {
+                    return await FooHandlerMock(args);
+                }
+            }
+
+            beforeEach(() => {
+                commandBus.register(FooCommand, new FooCommandHandler());
+            });
+
+            describe('When sendSync a foo command', () => {
+                it('context should be passed to command', async () => {
+                    const command = new FooCommand({ foo: 'bar' });
+                    await commandBus.sendSync(command);
+
+                    expect(FooHandlerMock).toHaveBeenCalledWith([command, { contextKey: 'foo-bar' }]);
                 });
             });
         });

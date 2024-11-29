@@ -1,5 +1,5 @@
 ---
-'@fizzbuds/ddd-toolkit': minor
+'@fizzbuds/ddd-toolkit': patch
 ---
 
-throw on send with unregistered command handler
+fix(local-command-bus): throw on send with unregistered command handler

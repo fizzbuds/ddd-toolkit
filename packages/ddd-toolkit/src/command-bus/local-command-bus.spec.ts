@@ -39,9 +39,9 @@ describe('LocalCommandBus', () => {
             describe('When send a foo command', () => {
                 it('Should log warning message', async () => {
                     const command = new FooCommand({ foo: 'bar' });
-                    await commandBus.send(command);
-
-                    expect(loggerMock.warn).toBeCalledWith(`No handler found for ${FooCommand.name}`);
+                    await expect(async () => await commandBus.send(command)).rejects.toThrow(
+                        `No handler found for ${FooCommand.name}`,
+                    );
                 });
             });
         });
@@ -64,7 +64,7 @@ describe('LocalCommandBus', () => {
                     const command = new FooCommand({ foo: 'bar' });
                     await commandBus.send(command);
 
-                    await waitFor(() => expect(FooHandlerMock).toBeCalledWith(command));
+                    await waitFor(() => expect(FooHandlerMock).toHaveBeenCalledWith(command));
                 });
             });
 
@@ -97,8 +97,8 @@ describe('LocalCommandBus', () => {
                         const command = new FooCommand({ foo: 'bar' });
                         await commandBus.send(command);
 
-                        await waitFor(() => expect(FooHandlerMock).toBeCalledWith(command));
-                        expect(BarHandlerMock).not.toBeCalled();
+                        await waitFor(() => expect(FooHandlerMock).toHaveBeenCalledWith(command));
+                        expect(BarHandlerMock).not.toHaveBeenCalled();
                     });
                 });
 
@@ -107,8 +107,8 @@ describe('LocalCommandBus', () => {
                         const command = new BarCommand({ foo: 'bar' });
                         await commandBus.send(command);
 
-                        expect(FooHandlerMock).not.toBeCalled();
-                        expect(BarHandlerMock).toBeCalledWith(command);
+                        expect(FooHandlerMock).not.toHaveBeenCalled();
+                        expect(BarHandlerMock).toHaveBeenCalledWith(command);
                     });
                 });
             });
@@ -135,21 +135,21 @@ describe('LocalCommandBus', () => {
 
                 it('handler should be called two times', async () => {
                     await waitFor(() => {
-                        expect(handlerMock).toBeCalledTimes(2);
+                        expect(handlerMock).toHaveBeenCalledTimes(2);
                     });
                 });
 
                 it('should not log error for failing handler', async () => {
                     await waitFor(() => {
-                        expect(handlerMock).toBeCalledTimes(2);
-                        expect(loggerMock.error).not.toBeCalled();
+                        expect(handlerMock).toHaveBeenCalledTimes(2);
+                        expect(loggerMock.error).not.toHaveBeenCalled();
                     });
                 });
 
                 it('should log one retry for failing handler', async () => {
                     await waitFor(() => {
-                        expect(loggerMock.warn).toBeCalledTimes(1);
-                        expect(loggerMock.warn).toBeCalledWith(
+                        expect(loggerMock.warn).toHaveBeenCalledTimes(1);
+                        expect(loggerMock.warn).toHaveBeenCalledWith(
                             expect.stringContaining(
                                 'FooCommandHandlerOk failed to handle FooCommand command. Attempt 1/3',
                             ),

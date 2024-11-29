@@ -26,10 +26,7 @@ export class LocalCommandBus implements ICommandBus {
 
     public async send<C extends ICommand<unknown, unknown>>(command: C): Promise<void> {
         const handler = this.handlers[command.name] as ICommandHandler<C>;
-        if (!handler) {
-            this.logger.warn(`No handler found for ${command.name}`);
-            return;
-        }
+        if (!handler) throw new Error(`No handler found for ${command.name}`);
 
         void this.handleCommand(command, handler);
     }
@@ -37,6 +34,7 @@ export class LocalCommandBus implements ICommandBus {
     public async sendSync<C extends ICommand<unknown, unknown>>(command: C): Promise<C['_returnType']> {
         const handler = this.handlers[command.name] as ICommandHandler<C>;
         if (!handler) throw new Error(`No handler found for ${command.name}`);
+
         return await handler.handle(command);
     }
 

@@ -1,4 +1,4 @@
-import { ConfirmChannel, connect, Connection } from 'amqplib';
+import { ChannelModel, ConfirmChannel, connect } from 'amqplib';
 import { ILogger } from '@fizzbuds/ddd-toolkit';
 import { inspect } from 'util';
 
@@ -8,7 +8,7 @@ import { inspect } from 'util';
 export class RabbitConnection {
     private static RECONNECTION_TIMEOUT = 2000;
 
-    private connection: Connection;
+    private connection: ChannelModel;
     private channel: ConfirmChannel;
 
     private waiting = false;

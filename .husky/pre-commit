@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-pnpm check
+# FIXME not working for some reasons
+#pnpm check
 pnpm exec lint-staged

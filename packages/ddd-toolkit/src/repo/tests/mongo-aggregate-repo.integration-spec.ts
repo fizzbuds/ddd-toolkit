@@ -38,6 +38,7 @@ describe('MongoAggregateRepo MongoDB Integration', () => {
     });
 
     afterAll(async () => {
+        await mongoClient.db().collection(collectionName).drop();
         await mongoClient.close();
         await mongodb.stop();
     });

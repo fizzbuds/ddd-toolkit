@@ -70,6 +70,7 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IAggreg
             },
             { upsert: true, session, ignoreUndefined: true },
         );
+        // FIXME in this point we don't know whether the aggregate will be successfully saved or not
         this.logger.debug(
             `Aggregate with id ${
                 aggregateModel.id

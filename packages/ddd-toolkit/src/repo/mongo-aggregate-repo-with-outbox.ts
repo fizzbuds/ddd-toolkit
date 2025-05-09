@@ -4,9 +4,10 @@ import { IOutbox } from '../outbox/outbox.interface';
 import { IRepoHooks } from './repo-hooks';
 import { ILogger } from '../logger';
 import { IEvent } from '../event-bus/event-bus.interface';
-import { DocumentWithId, IAggregateRepo, MongoAggregateRepo, WithOptionalVersion } from './mongo-aggregate-repo';
+import { MongoAggregateRepo } from './mongo-aggregate-repo';
+import { DocumentWithId, IRepo, WithOptionalVersion } from './repo.interface';
 
-export interface IAggregateRepoWithOutbox<A> extends IAggregateRepo<A> {
+export interface IAggregateRepoWithOutbox<A> extends IRepo<A> {
     saveAndPublish: (aggregate: A, eventsToBePublished?: IEvent<unknown>[]) => Promise<void>;
 }
 

@@ -1,15 +1,6 @@
-import { ClientSession, Collection, Document, MongoClient, ObjectId } from 'mongodb';
-
-interface ILogger {
-    log: (message: string, ...optionalParams: any[]) => void;
-    debug: (message: string, ...optionalParams: any[]) => void;
-    warn: (message: string, ...optionalParams: any[]) => void;
-    error: (message: string, ...optionalParams: any[]) => void;
-}
-
-export type WithOptionalVersion<T> = T & { __version?: number };
-export type WithVersion<T> = T & { __version: number };
-export type DocumentWithId = { id: string } & Document;
+import { ClientSession, Collection, MongoClient, ObjectId } from 'mongodb';
+import { ILogger } from '../logger';
+import { DocumentWithId, WithVersion } from './repo.interface';
 
 export type MongoDocument<T> = T & {
     _id: ObjectId;
@@ -32,16 +23,17 @@ export abstract class MongoBasicRepo<M extends DocumentWithId> {
         }
     }
 
+    // TODO: add indexes abstract field
     async init() {
         await this.collection.createIndex({ id: 1 }, { unique: true });
     }
 
-    async save(document: WithOptionalVersion<M>) {
+    async save(document: M | MongoDocument<WithVersion<M>>) {
         const documentVersion = document.__version || 0;
         const session = this.mongoClient.startSession();
         try {
             await session.withTransaction(async () => {
-                await this.upsertWriteModel(document, documentVersion, session);
+                await this.upsertModel(document, documentVersion, session);
             });
         } catch (e) {
             this.catchSaveTransaction(e, documentVersion, document);
@@ -50,14 +42,14 @@ export abstract class MongoBasicRepo<M extends DocumentWithId> {
         }
     }
 
-    protected async upsertWriteModel(model: M, modelVersion: number, session: ClientSession) {
+    protected async upsertModel(model: M, modelVersion: number, session: ClientSession) {
         await this.collection.updateOne(
             { id: model.id, __version: modelVersion } as any,
             {
                 $set: {
                     ...(model as M),
                     __version: modelVersion + 1,
-                    createdAt: undefined, // TODO make sure createdAt is not set again
+                    createdAt: undefined,
                     updatedAt: new Date(),
                 },
                 $setOnInsert: { createdAt: new Date() } as any,

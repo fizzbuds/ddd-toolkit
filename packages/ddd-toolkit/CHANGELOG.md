@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.2.0
+
+### Minor Changes
+
+-   63136b5: Introduced a MongoBasicRepo useful for CRUD needs
+
 ## 0.1.12
 
 ### Patch Changes

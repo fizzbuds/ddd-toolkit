@@ -115,13 +115,15 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
     }
 
     private async retrieveScheduledEvents() {
-        const scheduledEvents = await this.outboxCollection
+        const scheduledEventsIds = await this.outboxCollection
             .find({
                 status: 'scheduled',
                 contextName: this.contextName,
             })
+            .project({ _id: 1 })
+            .map((model) => model._id.toString())
             .toArray();
-        return scheduledEvents.map((event) => event._id.toString());
+        return scheduledEventsIds;
     }
 
     private async publishEventWithConcurrencyControl(eventId: string) {

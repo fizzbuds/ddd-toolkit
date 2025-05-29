@@ -60,11 +60,43 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
         const session = this.mongoClient.startSession();
         try {
             await session.withTransaction(async () => {
+                const notScheduledEventsIds = await this.outboxCollection
+                    .find(
+                        {
+                            _id: {
+                                $in: scheduledEventsIds.map((id) => new ObjectId(id)),
+                            },
+                            status: { $ne: 'scheduled' },
+                        },
+                        { session },
+                    )
+                    .project({ _id: 1 })
+                    .map((model) => model._id.toString())
+                    .toArray();
+
+                const { modifiedCount } = await this.outboxCollection.updateMany(
+                    {
+                        _id: {
+                            $in: scheduledEventsIds.map((id) => new ObjectId(id)),
+                        },
+                        status: 'scheduled',
+                    },
+                    { $set: { status: 'processing' } },
+                    { session },
+                );
+
+                const actualScheduledEventsIds = difference(scheduledEventsIds, notScheduledEventsIds);
+                if (modifiedCount !== scheduledEventsIds.length) {
+                    this.logger.debug(
+                        `Events ${notScheduledEventsIds.join(',')} are already being published or are already processing.`,
+                    );
+                }
+                if (modifiedCount === 0) return;
+
                 const outboxModels = await this.outboxCollection
                     .find(
                         {
-                            _id: { $in: scheduledEventsIds.map((id) => new ObjectId(id)) },
-                            status: 'scheduled',
+                            _id: { $in: actualScheduledEventsIds.map((id) => new ObjectId(id)) },
                         },
                         { session },
                     )
@@ -76,7 +108,6 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
                 await this.outboxCollection.updateMany(
                     {
                         _id: { $in: publishedIds },
-                        status: 'scheduled',
                     },
                     {
                         $set: {

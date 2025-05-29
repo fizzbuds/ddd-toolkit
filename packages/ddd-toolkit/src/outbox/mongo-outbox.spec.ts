@@ -1,7 +1,7 @@
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { MongoClient, ObjectId } from 'mongodb';
 import { MongoOutbox } from './mongo-outbox';
-import { Event } from '../event-bus/event';
+import { Event } from '../event-bus';
 import { waitFor } from '../utils';
 
 class FooEvent extends Event<{ foo: string }> {
@@ -88,7 +88,7 @@ describe('Mongo outbox', () => {
                 PublishEventsFnMock.mockResolvedValue('ok');
             });
 
-            describe('When publish', () => {
+            describe('When publishing', () => {
                 it('should call publishEventsFn once', async () => {
                     await outbox.publishEvents(ids);
                     expect(PublishEventsFnMock).toBeCalled();
@@ -119,7 +119,7 @@ describe('Mongo outbox', () => {
                 PublishEventsFnMock.mockRejectedValue('error');
             });
 
-            describe('When publish', () => {
+            describe('When publishing', () => {
                 it('should call publishEventsFn once', async () => {
                     await outbox.publishEvents(ids);
                     expect(PublishEventsFnMock).toBeCalled();
@@ -141,14 +141,76 @@ describe('Mongo outbox', () => {
                 const elapsed = Date.now() - now;
                 console.log(`Elapsed: ${elapsed}ms`);
                 expect(elapsed).toBeGreaterThan(1000);
+                await outbox.terminate();
+            });
+        });
+
+        describe('When publishing multiple events and one is already published', () => {
+            it('Then should publish only not published one', async () => {
+                await outbox.publishEvents([ids[0]]);
+
+                await outbox.publishEvents([ids[0], ids[1]]);
+
+                expect(PublishEventsFnMock).toHaveBeenNthCalledWith(1, [events[0]]);
+                expect(PublishEventsFnMock).toHaveBeenNthCalledWith(2, [events[1]]);
+            });
+        });
+
+        describe('When publishing an already published event', () => {
+            it('Then not publish it again', async () => {
+                await outbox.publishEvents([ids[0], ids[1]]);
+
+                await outbox.publishEvents([ids[0]]);
+
+                expect(PublishEventsFnMock).toHaveBeenCalledTimes(1);
+                expect(PublishEventsFnMock).toHaveBeenNthCalledWith(1, events);
             });
         });
     });
 
-    describe('When scheduleEvents with 0 events', () => {
+    describe('When scheduling events with 0 events', () => {
         it('should not throw', async () => {
             const session = mongoClient.startSession();
             await outbox.scheduleEvents([], session);
+        });
+    });
+
+    describe('Given a scheduled event', () => {
+        const eventId = '000000000000000000000001';
+        beforeEach(async () => {
+            await outbox['outboxCollection'].insertOne({
+                _id: new ObjectId(eventId),
+                event: { name: 'test', payload: {} },
+                scheduledAt: new Date(),
+                status: 'scheduled',
+            });
+        });
+
+        describe('When publishEventWithConcurrencyControl is called', () => {
+            it('then should not publish the same event twice', async () => {
+                await Promise.all([
+                    outbox['publishEventWithConcurrencyControl'](eventId),
+                    outbox['publishEventWithConcurrencyControl'](eventId),
+                ]);
+
+                expect(PublishEventsFnMock).toBeCalledTimes(1);
+
+                const event = await outbox['outboxCollection'].findOne({ _id: new ObjectId(eventId) });
+                expect(event?.status).toBe('published');
+                expect(event?.publishedAt).toEqual(expect.any(Date));
+            });
+        });
+
+        describe('When publishEvents is called', () => {
+            it('then should not publish the same event twice', async () => {
+                await Promise.all([outbox.publishEvents([eventId]), outbox.publishEvents([eventId])]);
+
+                expect(PublishEventsFnMock).toBeCalledTimes(1);
+
+                const event = await outbox['outboxCollection'].findOne({ _id: new ObjectId(eventId) });
+                expect(event?.status).toBe('published');
+                expect(event?.publishedAt).toEqual(expect.any(Date));
+            });
         });
     });
 });

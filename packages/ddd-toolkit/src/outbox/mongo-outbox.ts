@@ -1,5 +1,5 @@
 import { ClientSession, Collection, MongoClient, ObjectId } from 'mongodb';
-import { IEvent } from '../event-bus/event-bus.interface';
+import { IEvent } from '../event-bus';
 import { ILogger } from '../logger';
 import { inspect } from 'util';
 import { difference, intersection } from 'lodash';
@@ -57,42 +57,7 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
     }
 
     public async publishEvents(scheduledEventsIds: string[]): Promise<void> {
-        const session = this.mongoClient.startSession();
-        try {
-            await session.withTransaction(async () => {
-                const outboxModels = await this.outboxCollection
-                    .find(
-                        {
-                            _id: { $in: scheduledEventsIds.map((id) => new ObjectId(id)) },
-                            status: 'scheduled',
-                        },
-                        { session },
-                    )
-                    .toArray();
-                if (!outboxModels.length) return;
-                const events = outboxModels.map((model) => model.event);
-                await this.publishEventsFn(events);
-                const publishedIds = outboxModels.map((model) => model._id);
-                await this.outboxCollection.updateMany(
-                    {
-                        _id: { $in: publishedIds },
-                        status: 'scheduled',
-                    },
-                    {
-                        $set: {
-                            status: 'published',
-                            publishedAt: new Date(),
-                        },
-                    },
-                    { session },
-                );
-                this.logger.debug(`Published events ${publishedIds.join(', ')}`);
-            });
-        } catch (e) {
-            this.logger.warn(`Failed to publish events ${scheduledEventsIds.join(', ')}. ${inspect(e)}`);
-        } finally {
-            await session.endSession();
-        }
+        await Promise.all(scheduledEventsIds.map((eventId) => this.publishEventWithConcurrencyControl(eventId)));
     }
 
     //FROM https://github.com/gpad/ms-practical-ws/blob/main/src/infra/outbox_pattern.ts
@@ -156,6 +121,8 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
                     { session },
                 );
             });
+        } catch (e) {
+            this.logger.warn(`Failed to publish event ${eventId}. ${inspect(e)}`);
         } finally {
             await session.endSession();
         }

@@ -1,7 +1,7 @@
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { MongoClient, ObjectId } from 'mongodb';
 import { MongoOutbox } from './mongo-outbox';
-import { Event } from '../event-bus/event';
+import { Event } from '../event-bus';
 import { waitFor } from '../utils';
 
 class FooEvent extends Event<{ foo: string }> {
@@ -89,14 +89,15 @@ describe('Mongo outbox', () => {
             });
 
             describe('When publish', () => {
-                it('should call publishEventsFn once', async () => {
+                it('should call publishEventsFn for every event', async () => {
                     await outbox.publishEvents(ids);
-                    expect(PublishEventsFnMock).toBeCalled();
+                    expect(PublishEventsFnMock).toHaveBeenCalledTimes(ids.length);
                 });
 
-                it('should pass both events to publishEventsFn', async () => {
+                it('should pass one event at time to publishEventsFn', async () => {
                     await outbox.publishEvents(ids);
-                    expect(PublishEventsFnMock).toBeCalledWith(events);
+                    expect(PublishEventsFnMock).toHaveBeenCalledWith([events[0]]);
+                    expect(PublishEventsFnMock).toHaveBeenCalledWith([events[1]]);
                 });
 
                 it('should update the status of the events to published', async () => {

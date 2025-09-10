@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit-rabbit-bus
 
+## 3.0.0
+
+### Major Changes
+
+-   df9113a: feat(ddd-toolkit-rabbit-bus): cancelling bus, once subscribed
+
 ## 2.0.0
 
 ### Patch Changes

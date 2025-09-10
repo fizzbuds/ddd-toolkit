@@ -8,12 +8,13 @@ import {
     IRetryMechanism,
 } from '@fizzbuds/ddd-toolkit';
 
-import { ConsumeMessage } from 'amqplib';
+import { ConsumeMessage, Replies } from 'amqplib';
 import { inspect } from 'util';
 import { RabbitConnection } from './rabbit-connection';
 
 export class RabbitEventBus implements IEventBus {
     private connection: RabbitConnection;
+    private consumed?: Replies.Consume;
 
     private handlers: { eventName: string; queueName: string; handler: IEventHandler<IEvent<unknown>> }[] = [];
 
@@ -57,11 +58,21 @@ export class RabbitEventBus implements IEventBus {
 
         this.handlers.push({ eventName: event.name, queueName, handler });
 
-        await this.connection.getChannel().consume(queueName, (msg) => this.onMessage(msg, queueName));
+        this.consumed = await this.connection.getChannel().consume(queueName, (msg) => this.onMessage(msg, queueName));
         await this.connection.getChannel().bindQueue(queueName, this.exchangeName, event.name);
         this.logger.debug(
             `Handler ${handler.constructor.name} subscribed to event ${event.name} on queue ${queueName}`,
         );
+    }
+
+    public async cancel() {
+        if (!this.consumed) {
+            this.logger.warn('Cancelling, skip');
+            return;
+        }
+
+        this.logger.log(`Cancelling, tag:${this.consumed?.consumerTag}`);
+        await this.connection.getChannel().cancel(this.consumed?.consumerTag);
     }
 
     public async publish<T extends IEvent<unknown>>(event: T): Promise<void> {

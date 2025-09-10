@@ -21,7 +21,7 @@ class BarEvent extends Event<{ bar: string }> {
 }
 
 describe('RabbitEventBus', () => {
-    afterEach(() => jest.resetAllMocks());
+    beforeEach(() => jest.resetAllMocks());
 
     let rabbitEventBus: RabbitEventBus;
 
@@ -80,6 +80,16 @@ describe('RabbitEventBus', () => {
             it('should throw an error', async () => {
                 await expect(rabbitEventBus.subscribe(FooEvent, new FooEventHandler())).rejects.toThrow();
             });
+        });
+
+        describe('When cancelling', () => {
+            it('should cancel from consuming channel', async () => {
+                await rabbitEventBus.cancel();
+
+                await rabbitEventBus.publish(new FooEvent({ foo: 'foo' }));
+
+                await waitFor(() => expect(handlerMock).not.toBeCalled());
+            })
         });
     });
 
@@ -171,7 +181,7 @@ describe('RabbitEventBus', () => {
 
     describe('Given no handler subscribed', () => {
         class FooEventHandler implements IEventHandler<FooEvent> {
-            async handle() {}
+            async handle() { }
         }
 
         beforeEach(async () => {

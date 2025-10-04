@@ -2,7 +2,6 @@ import { ClientSession, Collection, MongoClient, ObjectId } from 'mongodb';
 import { IEvent } from '../event-bus';
 import { ILogger } from '../logger';
 import { inspect } from 'util';
-import { difference, intersection } from 'lodash';
 import { IOutbox } from './outbox.interface';
 import { IInit } from '../init.interface';
 import { ITerminate } from '../terminate.interface';
@@ -32,11 +31,12 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
     }
 
     public async init() {
-        this.logger.debug(`Starting outbox monitoring with interval ${this.monitoringIntervalMs}ms`);
-        void this.checkScheduledEvents([]);
+        this.logger.log(`Starting outbox monitoring with interval ${this.monitoringIntervalMs}ms`);
+        void this.checkScheduledEvents();
     }
 
     public async terminate() {
+        this.logger.log(`Stopping outbox monitoring...`);
         this.stopping = true;
         await sleep(this.monitoringIntervalMs);
     }
@@ -60,27 +60,30 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
         await Promise.all(scheduledEventsIds.map((eventId) => this.publishEventWithConcurrencyControl(eventId)));
     }
 
-    //FROM https://github.com/gpad/ms-practical-ws/blob/main/src/infra/outbox_pattern.ts
-    private async checkScheduledEvents(warningIds: string[]) {
+    // Inspired by https://github.com/gpad/ms-practical-ws/blob/main/src/infra/outbox_pattern.ts
+    private async checkScheduledEvents() {
         try {
             if (this.stopping) return;
-            await sleep(this.monitoringIntervalMs);
-            const currentIds = await this.retrieveScheduledEvents();
-            const toPublish = intersection(currentIds, warningIds);
-            if (toPublish.length) {
-                this.logger.warn(`Events ${toPublish.join(', ')} are still scheduled.`);
-                await Promise.all(toPublish.map((eventId) => this.publishEventWithConcurrencyControl(eventId)));
+
+            const currentIds = await this.retrieveScheduledEventsIds();
+            if (currentIds.length) {
+                await Promise.all(currentIds.map((eventId) => this.publishEventWithConcurrencyControl(eventId)));
             }
-            const nextWarning = difference(currentIds, toPublish);
-            void this.checkScheduledEvents(nextWarning);
+
+            await this.checkScheduledEventsAndFreeStack();
         } catch (e) {
             this.logger.error(`Failed to check scheduled events. ${inspect(e)}`);
-            void this.checkScheduledEvents([]);
+
+            await this.checkScheduledEventsAndFreeStack();
         }
     }
 
-    private async retrieveScheduledEvents() {
-        const scheduledEventsIds = await this.outboxCollection
+    private async checkScheduledEventsAndFreeStack() {
+        setTimeout(() => void this.checkScheduledEvents(), this.monitoringIntervalMs);
+    }
+
+    private async retrieveScheduledEventsIds(): Promise<string[]> {
+        return await this.outboxCollection
             .find({
                 status: 'scheduled',
                 contextName: this.contextName,
@@ -88,7 +91,6 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
             .project({ _id: 1 })
             .map((model) => model._id.toString())
             .toArray();
-        return scheduledEventsIds;
     }
 
     private async publishEventWithConcurrencyControl(eventId: string) {

@@ -1,5 +1,6 @@
 import { Event, IEventHandler, ILogger, waitFor } from '@fizzbuds/ddd-toolkit';
 import { RabbitEventBus } from './index';
+import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 
 const loggerMock: ILogger = {
     log: jest.fn(),
@@ -21,16 +22,45 @@ class BarEvent extends Event<{ bar: string }> {
 }
 
 describe('RabbitEventBus', () => {
-    beforeEach(() => jest.resetAllMocks());
-
+    let container: StartedTestContainer;
     let rabbitEventBus: RabbitEventBus;
+    let rabbitUrl: string;
+
+    beforeAll(async () => {
+        // Start RabbitMQ container
+        container = await new GenericContainer('rabbitmq:3.8-management')
+            .withEnvironment({
+                RABBITMQ_DEFAULT_USER: 'guest',
+                RABBITMQ_DEFAULT_PASS: 'guest',
+            })
+            .withExposedPorts(5672, 15672)
+            .withWaitStrategy(Wait.forListeningPorts())
+            .start();
+
+        const mappedPort = container.getMappedPort(5672);
+        rabbitUrl = `amqp://guest:guest@localhost:${mappedPort}`;
+    }, 60000); // 60 second timeout for container startup
+
+    afterAll(async () => {
+        if (container) {
+            await container.stop();
+        }
+    });
+
+    beforeEach(() => {
+        jest.resetAllMocks();
+    });
 
     beforeEach(async () => {
-        rabbitEventBus = new RabbitEventBus('amqp://guest:guest@localhost', 'exchange', 10, 3, undefined, loggerMock);
+        rabbitEventBus = new RabbitEventBus(rabbitUrl, 'exchange', 10, 3, undefined, loggerMock);
         await rabbitEventBus.init();
     });
 
-    afterEach(async () => await rabbitEventBus.terminate());
+    afterEach(async () => {
+        if (rabbitEventBus) {
+            await rabbitEventBus.terminate();
+        }
+    });
 
     describe('Given an handler subscribed to an event', () => {
         const handlerMock = jest.fn();
@@ -89,7 +119,7 @@ describe('RabbitEventBus', () => {
                 await rabbitEventBus.publish(new FooEvent({ foo: 'foo' }));
 
                 await waitFor(() => expect(handlerMock).not.toBeCalled());
-            })
+            });
         });
     });
 
@@ -181,7 +211,7 @@ describe('RabbitEventBus', () => {
 
     describe('Given no handler subscribed', () => {
         class FooEventHandler implements IEventHandler<FooEvent> {
-            async handle() { }
+            async handle() {}
         }
 
         beforeEach(async () => {

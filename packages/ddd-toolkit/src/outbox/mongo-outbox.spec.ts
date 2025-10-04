@@ -19,9 +19,9 @@ class BarEvent extends Event<{ foo: string }> {
 describe('Mongo outbox', () => {
     let mongodb: MongoMemoryReplSet;
     let mongoClient: MongoClient;
-
     let outbox: MongoOutbox;
 
+    const MONITORING_INTERVAL_MS = 500;
     const PublishEventsFnMock = jest.fn();
 
     beforeAll(async () => {
@@ -35,16 +35,26 @@ describe('Mongo outbox', () => {
 
         mongoClient = new MongoClient(mongodb.getUri());
         await mongoClient.connect();
-        outbox = new MongoOutbox(mongoClient, 'outbox', async (events) => PublishEventsFnMock(events));
+    });
+
+    beforeEach(() => {
+        outbox = new MongoOutbox(
+            mongoClient,
+            'outbox',
+            async (events) => PublishEventsFnMock(events),
+            undefined,
+            undefined,
+            MONITORING_INTERVAL_MS,
+        );
     });
 
     afterAll(async () => {
-        await outbox.terminate();
         await mongoClient.close();
         await mongodb.stop();
     });
 
     afterEach(async () => {
+        await outbox.terminate();
         jest.resetAllMocks();
         await outbox['outboxCollection'].deleteMany({});
     });
@@ -81,6 +91,16 @@ describe('Mongo outbox', () => {
         beforeEach(async () => {
             const session = mongoClient.startSession();
             ids = await outbox.scheduleEvents(events, session);
+        });
+
+        describe('When startMonitoring', () => {
+            it('after the monitoring interval it should have published them', async () => {
+                await outbox.init();
+                await waitFor(
+                    () => expect(PublishEventsFnMock).toHaveBeenCalledTimes(2),
+                    MONITORING_INTERVAL_MS + 1000,
+                );
+            });
         });
 
         describe('Given a resolving publishEventsFn', () => {
@@ -131,17 +151,6 @@ describe('Mongo outbox', () => {
                     const events = await outbox['outboxCollection'].find().toArray();
                     expect(events.every((event) => event.status === 'scheduled')).toBe(true);
                 });
-            });
-        });
-
-        describe('When startMonitoring', () => {
-            it('after about 1 second it should publish them', async () => {
-                const now = Date.now();
-                await outbox.init();
-                await waitFor(() => expect(PublishEventsFnMock).toBeCalled(), 3000);
-                const elapsed = Date.now() - now;
-                console.log(`Elapsed: ${elapsed}ms`);
-                expect(elapsed).toBeGreaterThan(1000);
             });
         });
     });

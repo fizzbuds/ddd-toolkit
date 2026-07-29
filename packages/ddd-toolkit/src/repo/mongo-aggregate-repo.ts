@@ -35,9 +35,9 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IRepo<A
         const aggregateVersion = aggregate.__version || 0;
         const session = this.mongoClient.startSession();
         try {
-            await session.withTransaction(async () => {
-                await this.upsertWriteModel(aggregateModel, aggregateVersion, session);
-                await this.handleRepoHooks(aggregateModel, session);
+            await session.withTransaction(async (client) => {
+                await this.upsertWriteModel(aggregateModel, aggregateVersion, client);
+                await this.handleRepoHooks(aggregateModel, client);
             });
         } catch (e) {
             this.catchSaveTransaction(e, aggregateVersion, aggregateModel);

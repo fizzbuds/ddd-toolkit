@@ -94,11 +94,11 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
     private async publishEventWithConcurrencyControl(eventId: string) {
         const session = this.mongoClient.startSession();
         try {
-            await session.withTransaction(async () => {
+            await session.withTransaction(async (client) => {
                 const { modifiedCount } = await this.outboxCollection.updateOne(
                     { _id: new ObjectId(eventId), status: 'scheduled' },
                     { $set: { status: 'processing' } },
-                    { session },
+                    { session: client },
                 );
                 if (modifiedCount !== 1) {
                     this.logger.debug(`Event ${eventId} is already being processed.`);
@@ -106,7 +106,10 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
                 }
                 this.logger.debug(`Event ${eventId} is being processed.`);
 
-                const outBoxModel = await this.outboxCollection.findOne({ _id: new ObjectId(eventId) }, { session });
+                const outBoxModel = await this.outboxCollection.findOne(
+                    { _id: new ObjectId(eventId) },
+                    { session: client },
+                );
                 if (!outBoxModel) return;
 
                 await this.publishEventsFn([outBoxModel.event]);
@@ -118,7 +121,7 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
                             publishedAt: new Date(),
                         },
                     },
-                    { session },
+                    { session: client },
                 );
             });
         } catch (e) {

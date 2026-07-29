@@ -32,8 +32,8 @@ export abstract class MongoBasicRepo<M extends DocumentWithId> {
         const documentVersion = document.__version || 0;
         const session = this.mongoClient.startSession();
         try {
-            await session.withTransaction(async () => {
-                await this.upsertModel(document, documentVersion, session);
+            await session.withTransaction(async (client) => {
+                await this.upsertModel(document, documentVersion, client);
             });
         } catch (e) {
             this.catchSaveTransaction(e, documentVersion, document);

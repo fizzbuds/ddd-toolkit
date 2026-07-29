@@ -35,10 +35,10 @@ export class MongoAggregateRepoWithOutbox<A, AM extends DocumentWithId>
 
         let scheduledEventIds: string[] = [];
         try {
-            await session.withTransaction(async () => {
-                await this.upsertWriteModel(aggregateModel, aggregateVersion, session);
-                await this.handleRepoHooks(aggregateModel, session);
-                scheduledEventIds = await this.outbox.scheduleEvents(eventsToPublish, session);
+            await session.withTransaction(async (client) => {
+                await this.upsertWriteModel(aggregateModel, aggregateVersion, client);
+                await this.handleRepoHooks(aggregateModel, client);
+                scheduledEventIds = await this.outbox.scheduleEvents(eventsToPublish, client);
             });
         } catch (e) {
             this.catchSaveTransaction(e, aggregateVersion, aggregateModel);

@@ -18,6 +18,7 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
     private outboxCollection: Collection<OutboxEventModel>;
 
     private stopping = false;
+    private timeoutHandle?: ReturnType<typeof setTimeout>;
 
     constructor(
         private readonly mongoClient: MongoClient,
@@ -38,6 +39,7 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
     public async terminate() {
         this.logger.log(`Stopping outbox monitoring...`);
         this.stopping = true;
+        if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
         await sleep(this.monitoringIntervalMs);
     }
 
@@ -70,16 +72,16 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
                 await Promise.all(currentIds.map((eventId) => this.publishEventWithConcurrencyControl(eventId)));
             }
 
-            await this.checkScheduledEventsAndFreeStack();
+            this.checkScheduledEventsAndFreeStack();
         } catch (e) {
             this.logger.error(`Failed to check scheduled events. ${inspect(e)}`);
 
-            await this.checkScheduledEventsAndFreeStack();
+            this.checkScheduledEventsAndFreeStack();
         }
     }
 
-    private async checkScheduledEventsAndFreeStack() {
-        setTimeout(() => void this.checkScheduledEvents(), this.monitoringIntervalMs);
+    private checkScheduledEventsAndFreeStack(): void {
+        this.timeoutHandle = setTimeout(() => void this.checkScheduledEvents(), this.monitoringIntervalMs);
     }
 
     private async retrieveScheduledEventsIds(): Promise<string[]> {

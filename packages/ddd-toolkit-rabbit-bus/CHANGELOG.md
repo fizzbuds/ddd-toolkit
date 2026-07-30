@@ -1,5 +1,13 @@
 # @fizzbuds/ddd-toolkit-rabbit-bus
 
+## 3.0.1
+
+### Patch Changes
+
+-   47e089c: chore(ddd-toolkit-rabbit-bus): dlq, retry on error: skip delay, once cancelled
+-   Updated dependencies [47e089c]
+    -   @fizzbuds/ddd-toolkit@0.2.1
+
 ## 3.0.0
 
 ### Major Changes

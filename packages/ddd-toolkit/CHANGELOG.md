@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.2.1
+
+### Patch Changes
+
+-   47e089c: chore(mongodb): transactions: on isolated session, not on originating one
+
 ## 0.2.0
 
 ### Minor Changes

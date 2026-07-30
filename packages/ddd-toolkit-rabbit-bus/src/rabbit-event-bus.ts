@@ -15,6 +15,7 @@ import { RabbitConnection } from './rabbit-connection';
 export class RabbitEventBus implements IEventBus {
     private connection: RabbitConnection;
     private consumed?: Replies.Consume;
+    private cancelled: boolean;
 
     private handlers: { eventName: string; queueName: string; handler: IEventHandler<IEvent<unknown>> }[] = [];
 
@@ -31,6 +32,7 @@ export class RabbitEventBus implements IEventBus {
         private readonly deadLetterExchangeName: string = 'dead-letter',
         private readonly deadLetterQueueName = 'dead-letter-queue',
     ) {
+        this.cancelled = false;
         this.connection = new RabbitConnection(
             amqpUrl,
             exchangeName,
@@ -73,6 +75,7 @@ export class RabbitEventBus implements IEventBus {
 
         this.logger.log(`Cancelling, tag:${this.consumed?.consumerTag}`);
         await this.connection.getChannel().cancel(this.consumed?.consumerTag);
+        this.cancelled = true;
     }
 
     public async publish<T extends IEvent<unknown>>(event: T): Promise<void> {
@@ -125,7 +128,7 @@ export class RabbitEventBus implements IEventBus {
             this.logger.warn(`Error handling message due ${inspect(e)}`);
             const deliveryCount = rawMessage.properties.headers?.['x-delivery-count'] || 0;
             if (deliveryCount < this.maxAttempts) {
-                await new Promise((resolve) => setTimeout(resolve, this.exponentialBackoff.getDelay(deliveryCount)));
+                await new Promise((resolve) => setTimeout(resolve, this.nextDelay(deliveryCount)));
                 this.connection.getChannel().nack(rawMessage, false, true);
                 this.logger.warn(`Message re-queued due ${inspect(e)}`);
             } else {
@@ -133,6 +136,15 @@ export class RabbitEventBus implements IEventBus {
                 this.logger.error(`Message sent to dlq due ${inspect(e)}`);
             }
         }
+    }
+
+    private nextDelay(deliveryCount: any): number | undefined {
+        if (this.cancelled) {
+            this.logger.log('Cancelling: no delay');
+            return 0;
+        }
+
+        return this.exponentialBackoff.getDelay(deliveryCount);
     }
 
     private isAValidMessage(parsedMessage: any): boolean {

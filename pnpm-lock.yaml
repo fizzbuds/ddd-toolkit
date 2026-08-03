@@ -20,6 +20,9 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^6.18.1
         version: 6.21.0(eslint@8.57.1)(typescript@5.8.3)
+      cspell:
+        specifier: ^8.3.2
+        version: 8.19.4
       eslint:
         specifier: ^8.56.0
         version: 8.57.1
@@ -63,9 +66,6 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^6.18.1
         version: 6.21.0(eslint@8.57.1)(typescript@5.8.3)
-      cspell:
-        specifier: ^8.3.2
-        version: 8.19.4
       eslint:
         specifier: ^8.56.0
         version: 8.57.1
@@ -138,9 +138,6 @@ importers:
       amqplib:
         specifier: ^0.10.3
         version: 0.10.8
-      cspell:
-        specifier: ^8.3.2
-        version: 8.19.4
       eslint:
         specifier: ^8.56.0
         version: 8.57.1

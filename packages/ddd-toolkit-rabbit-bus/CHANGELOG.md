@@ -1,5 +1,16 @@
 # @fizzbuds/ddd-toolkit-rabbit-bus
 
+## 4.0.0
+
+### Minor Changes
+
+-   5bd6232: dlq, retry on error: ensure additional errors are catched
+
+### Patch Changes
+
+-   Updated dependencies [5bd6232]
+    -   @fizzbuds/ddd-toolkit@0.3.0
+
 ## 3.0.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.3.0
+
+### Minor Changes
+
+-   5bd6232: dlq, retry on error: ensure additional errors are catched
+
 ## 0.2.1
 
 ### Patch Changes

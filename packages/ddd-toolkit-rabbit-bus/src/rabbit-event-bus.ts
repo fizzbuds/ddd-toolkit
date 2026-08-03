@@ -125,15 +125,19 @@ export class RabbitEventBus implements IEventBus {
             this.connection.getChannel().ack(rawMessage);
             this.logger.debug(`Event ${event.name} handled by ${handler.constructor.name} successfully`);
         } catch (e) {
-            this.logger.warn(`Error handling message due ${inspect(e)}`);
-            const deliveryCount = rawMessage.properties.headers?.['x-delivery-count'] || 0;
-            if (deliveryCount < this.maxAttempts) {
-                await new Promise((resolve) => setTimeout(resolve, this.nextDelay(deliveryCount)));
-                this.connection.getChannel().nack(rawMessage, false, true);
-                this.logger.warn(`Message re-queued due ${inspect(e)}`);
-            } else {
-                this.connection.getChannel().nack(rawMessage, false, false);
-                this.logger.error(`Message sent to dlq due ${inspect(e)}`);
+            try {
+                this.logger.warn(`Error handling message due ${inspect(e)}`);
+                const deliveryCount = rawMessage.properties.headers?.['x-delivery-count'] || 0;
+                if (deliveryCount < this.maxAttempts) {
+                    await new Promise((resolve) => setTimeout(resolve, this.nextDelay(deliveryCount)));
+                    this.connection.getChannel().nack(rawMessage, false, true);
+                    this.logger.warn(`Message re-queued due ${inspect(e)}`);
+                } else {
+                    this.connection.getChannel().nack(rawMessage, false, false);
+                    this.logger.error(`Message sent to dlq due ${inspect(e)}`);
+                }
+            } catch (error) {
+                this.logger.warn(`Error could not handled, cause: ${inspect(e)}`);
             }
         }
     }

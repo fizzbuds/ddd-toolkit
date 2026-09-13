@@ -9,6 +9,7 @@ import {
 } from '@fizzbuds/ddd-toolkit';
 
 import { ConsumeMessage, Replies } from 'amqplib';
+import { randomUUID } from 'node:crypto';
 import { inspect } from 'util';
 import { RabbitConnection } from './rabbit-connection';
 
@@ -79,11 +80,17 @@ export class RabbitEventBus implements IEventBus {
     }
 
     public async publish<T extends IEvent<unknown>>(event: T): Promise<void> {
-        const serializedEvent = JSON.stringify(event);
-        const message = Buffer.from(serializedEvent);
-        this.connection.getChannel().publish(this.exchangeName, event.name, message);
+        const routingKey = event.name;
+        const messageId = randomUUID();
+        const content = JSON.stringify(event);
+
+        this.connection.getChannel().publish(this.exchangeName, routingKey, Buffer.from(content), {
+            persistent: true,
+            messageId: messageId,
+        });
+
         await this.connection.getChannel().waitForConfirms();
-        this.logger.debug(`Event ${event.name} published. ${serializedEvent}`);
+        this.logger.debug(`Event ${event.name} published. ${content}`);
     }
 
     public async terminate(): Promise<void> {

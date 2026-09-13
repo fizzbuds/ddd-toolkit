@@ -20,9 +20,9 @@ export class RabbitEventBus implements IEventBus {
     private handlers: { eventName: string; queueName: string; handler: IEventHandler<IEvent<unknown>> }[] = [];
 
     constructor(
-        amqpUrl: string,
+        readonly amqpUrl: string,
         private readonly exchangeName: string,
-        consumerPrefetch: number = 10,
+        readonly consumerPrefetch: number = 10,
         private readonly maxAttempts: number = 3,
         private readonly exponentialBackoff: IRetryMechanism = new ExponentialBackoff(1000),
         private readonly logger: ILogger = console,
@@ -30,7 +30,7 @@ export class RabbitEventBus implements IEventBus {
         private readonly queueNameFormatter: (handlerName: string) => string = camelCaseToKebabCase,
         private readonly queueExpirationMs: number = 30 * 60000,
         private readonly deadLetterExchangeName: string = 'dead-letter',
-        private readonly deadLetterQueueName = 'dead-letter-queue',
+        readonly deadLetterQueueName = 'dead-letter-queue',
     ) {
         this.cancelled = false;
         this.connection = new RabbitConnection(

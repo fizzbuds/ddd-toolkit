@@ -90,7 +90,9 @@ export class RabbitEventBus implements IEventBus {
         });
 
         await this.connection.getChannel().waitForConfirms();
-        this.logger.debug(`Event ${event.name} published. ${content}`);
+        this.logger.log(
+            `Published message id ${messageId} and rk ${routingKey} on exchange ${this.exchangeName}. Content ${content}`,
+        );
     }
 
     public async terminate(): Promise<void> {
@@ -109,7 +111,11 @@ export class RabbitEventBus implements IEventBus {
             return;
         }
 
-        this.logger.debug(`Received message ${rawMessage.content.toString()} on queue ${queueName}`);
+        const messageId = rawMessage.properties.messageId;
+        const routingKey = rawMessage.fields.routingKey;
+        this.logger.log(
+            `Received message ${messageId} with rk ${routingKey} on queue ${queueName}. Content: ${rawMessage.content.toString()}`,
+        );
 
         if (!this.isAValidMessage(parsedMessage)) {
             this.connection.getChannel().nack(rawMessage, false, false);
@@ -130,7 +136,7 @@ export class RabbitEventBus implements IEventBus {
         try {
             await handler.handle(event);
             this.connection.getChannel().ack(rawMessage);
-            this.logger.debug(`Event ${event.name} handled by ${handler.constructor.name} successfully`);
+            this.logger.log(`Event ${event.name}, ack message sent for ${messageId}`);
         } catch (e) {
             try {
                 this.logger.warn(`Error handling message due ${inspect(e)}`);
@@ -144,7 +150,7 @@ export class RabbitEventBus implements IEventBus {
                     this.logger.error(`Message sent to dlq due ${inspect(e)}`);
                 }
             } catch (error) {
-                this.logger.warn(`Error could not handled, cause: ${inspect(e)}`);
+                this.logger.warn(`Error could not be handled, cause: ${inspect(e)}`);
             }
         }
     }

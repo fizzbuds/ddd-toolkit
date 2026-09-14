@@ -1,5 +1,16 @@
 # @fizzbuds/ddd-toolkit-rabbit-bus
 
+## 5.0.0
+
+### Minor Changes
+
+-   9d4bda6: [rabbit-bus] publish, receive: more troubleshooting info- #89
+
+### Patch Changes
+
+-   Updated dependencies [9d4bda6]
+    -   @fizzbuds/ddd-toolkit@0.4.0
+
 ## 4.0.0
 
 ### Minor Changes

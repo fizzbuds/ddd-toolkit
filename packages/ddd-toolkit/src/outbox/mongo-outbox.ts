@@ -33,7 +33,7 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
 
     public async init() {
         this.logger.debug(`Starting outbox monitoring with interval ${this.monitoringIntervalMs}ms`);
-        void this.checkScheduledEvents([]);
+        this.checkScheduledEvents([]).catch(this.onCheckFailure);
     }
 
     public async terminate() {
@@ -72,10 +72,10 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
                 await Promise.all(toPublish.map((eventId) => this.publishEventWithConcurrencyControl(eventId)));
             }
             const nextWarning = difference(currentIds, toPublish);
-            void this.checkScheduledEvents(nextWarning);
+            this.checkScheduledEvents(nextWarning).catch(this.onCheckFailure);
         } catch (e) {
             this.logger.error(`Failed to check scheduled events. ${inspect(e)}`);
-            void this.checkScheduledEvents([]);
+            this.checkScheduledEvents([]).catch(this.onCheckFailure);
         }
     }
 
@@ -126,6 +126,11 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
         } finally {
             await session.endSession();
         }
+    }
+
+    // avoid un-handled rejected promises, causing Node.js process restart
+    private onCheckFailure(e: any) {
+        this.logger.warn('Could not check scheduled events', e);
     }
 }
 

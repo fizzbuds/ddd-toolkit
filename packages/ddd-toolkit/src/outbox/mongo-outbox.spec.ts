@@ -46,7 +46,7 @@ describe('Mongo outbox', () => {
 
     afterEach(async () => {
         jest.resetAllMocks();
-        await outbox['outboxCollection'].deleteMany({});
+        await outbox['collection'].deleteMany({});
     });
 
     describe('When scheduleEvents with two events', () => {
@@ -63,7 +63,7 @@ describe('Mongo outbox', () => {
         });
 
         it('should insert two events in the outbox', async () => {
-            const events = await outbox['outboxCollection'].find().toArray();
+            const events = await outbox['collection'].find().toArray();
             expect(events.length).toBe(2);
             expect(events[0]).toMatchObject({
                 _id: expect.any(ObjectId),
@@ -102,13 +102,13 @@ describe('Mongo outbox', () => {
 
                 it('should update the status of the events to published', async () => {
                     await outbox.publishEvents(ids);
-                    const events = await outbox['outboxCollection'].find().toArray();
+                    const events = await outbox['collection'].find().toArray();
                     expect(events.every((event) => event.status === 'published')).toBe(true);
                 });
 
                 it('should set the publishedAt date', async () => {
                     await outbox.publishEvents(ids);
-                    const events = await outbox['outboxCollection'].find().toArray();
+                    const events = await outbox['collection'].find().toArray();
                     expect(events[0].publishedAt).toEqual(expect.any(Date));
                     expect(events[1].publishedAt).toEqual(expect.any(Date));
                 });
@@ -128,7 +128,7 @@ describe('Mongo outbox', () => {
 
                 it('should not update the status of the events to published', async () => {
                     await outbox.publishEvents(ids);
-                    const events = await outbox['outboxCollection'].find().toArray();
+                    const events = await outbox['collection'].find().toArray();
                     expect(events.every((event) => event.status === 'scheduled')).toBe(true);
                 });
             });

@@ -25,7 +25,9 @@ export abstract class MongoBasicRepo<M extends DocumentWithId> {
 
     // TODO: add indexes abstract field
     async init() {
-        await this.collection.createIndex({ id: 1 }, { unique: true });
+        await this.collection.createIndex({ id: 1 }, { unique: true }).catch((e: any) => {
+            this.logger.warn('Skipping index creation', e);
+        });
     }
 
     async save(document: M | MongoDocument<WithVersion<M>>) {

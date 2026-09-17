@@ -1,11 +1,11 @@
-import { ClientSession, Collection, MongoClient, ObjectId } from 'mongodb';
-import { IEvent } from '../event-bus';
-import { ILogger } from '../logger';
-import { inspect } from 'util';
 import { difference, intersection } from 'lodash';
-import { IOutbox } from './outbox.interface';
+import { ClientSession, Collection, MongoClient, ObjectId } from 'mongodb';
+import { inspect } from 'util';
+import { IEvent } from '../event-bus';
 import { IInit } from '../init.interface';
+import { ILogger } from '../logger';
 import { ITerminate } from '../terminate.interface';
+import { IOutbox } from './outbox.interface';
 
 type OutboxEventModel = {
     event: IEvent<unknown>;
@@ -16,7 +16,7 @@ type OutboxEventModel = {
 };
 
 export class MongoOutbox implements IOutbox, IInit, ITerminate {
-    private outboxCollection: Collection<OutboxEventModel>;
+    private collection: Collection<OutboxEventModel>;
 
     private stopping = false;
 
@@ -28,12 +28,16 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
         private readonly contextName?: string,
         private readonly monitoringIntervalMs = 500,
     ) {
-        this.outboxCollection = mongoClient.db().collection(collectionName);
+        this.collection = mongoClient.db().collection(collectionName);
     }
 
     public async init() {
+        await this.collection.createIndex({ status: 1, contextName: 1 }).catch((e: any) => {
+            this.logger.warn('Skipping index creation', e);
+        });
+
         this.logger.debug(`Starting outbox monitoring with interval ${this.monitoringIntervalMs}ms`);
-        void this.checkScheduledEvents([]);
+        this.checkScheduledEvents([]).catch(this.onCheckFailure);
     }
 
     public async terminate() {
@@ -43,9 +47,9 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
 
     public async scheduleEvents(events: IEvent<unknown>[], clientSession: ClientSession): Promise<string[]> {
         if (!events.length) return [];
-        const { insertedIds } = await this.outboxCollection.insertMany(
+        const { insertedIds } = await this.collection.insertMany(
             events.map((event) => ({
-                event,
+                event: event,
                 scheduledAt: new Date(),
                 status: 'scheduled',
                 contextName: this.contextName,
@@ -72,15 +76,15 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
                 await Promise.all(toPublish.map((eventId) => this.publishEventWithConcurrencyControl(eventId)));
             }
             const nextWarning = difference(currentIds, toPublish);
-            void this.checkScheduledEvents(nextWarning);
+            this.checkScheduledEvents(nextWarning).catch(this.onCheckFailure);
         } catch (e) {
             this.logger.error(`Failed to check scheduled events. ${inspect(e)}`);
-            void this.checkScheduledEvents([]);
+            this.checkScheduledEvents([]).catch(this.onCheckFailure);
         }
     }
 
     private async retrieveScheduledEvents() {
-        const scheduledEventsIds = await this.outboxCollection
+        const scheduledEventsIds = await this.collection
             .find({
                 status: 'scheduled',
                 contextName: this.contextName,
@@ -95,7 +99,7 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
         const session = this.mongoClient.startSession();
         try {
             await session.withTransaction(async (client) => {
-                const { modifiedCount } = await this.outboxCollection.updateOne(
+                const { modifiedCount } = await this.collection.updateOne(
                     { _id: new ObjectId(eventId), status: 'scheduled' },
                     { $set: { status: 'processing' } },
                     { session: client },
@@ -106,14 +110,11 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
                 }
                 this.logger.debug(`Event ${eventId} is being processed.`);
 
-                const outBoxModel = await this.outboxCollection.findOne(
-                    { _id: new ObjectId(eventId) },
-                    { session: client },
-                );
+                const outBoxModel = await this.collection.findOne({ _id: new ObjectId(eventId) }, { session: client });
                 if (!outBoxModel) return;
 
                 await this.publishEventsFn([outBoxModel.event]);
-                await this.outboxCollection.updateOne(
+                await this.collection.updateOne(
                     { _id: new ObjectId(eventId) },
                     {
                         $set: {
@@ -129,6 +130,11 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
         } finally {
             await session.endSession();
         }
+    }
+
+    // avoid un-handled rejected promises, causing Node.js process restart
+    private onCheckFailure(e: any) {
+        this.logger.warn('Could not check scheduled events', e);
     }
 }
 

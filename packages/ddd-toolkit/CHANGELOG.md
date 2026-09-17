@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.5.0
+
+### Minor Changes
+
+-   b9cc587: outbox: safer, with indexed queries
+
 ## 0.4.0
 
 ### Minor Changes

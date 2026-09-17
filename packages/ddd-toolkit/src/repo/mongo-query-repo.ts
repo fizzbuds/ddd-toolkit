@@ -23,7 +23,9 @@ export abstract class MongoQueryRepo<RM extends Document> implements IInit {
             this.logger.warn(`No indexes defined for ${this.collectionName}`);
         } else {
             for (const { indexSpec, options } of this.indexes) {
-                await this.collection.createIndex(indexSpec, options || {});
+                await this.collection.createIndex(indexSpec, options || {}).catch((e: any) => {
+                    this.logger.warn('Skipping index creation', e);
+                });
             }
         }
     }

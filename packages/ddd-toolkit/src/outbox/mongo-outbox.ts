@@ -32,6 +32,10 @@ export class MongoOutbox implements IOutbox, IInit, ITerminate {
     }
 
     public async init() {
+        await this.collection.createIndex({ status: 1, contextName: 1 }).catch((e: any) => {
+            this.logger.warn('Skipping index creation', e);
+        });
+
         this.logger.debug(`Starting outbox monitoring with interval ${this.monitoringIntervalMs}ms`);
         this.checkScheduledEvents([]).catch(this.onCheckFailure);
     }

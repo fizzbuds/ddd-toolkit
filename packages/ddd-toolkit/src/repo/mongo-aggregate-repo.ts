@@ -27,7 +27,9 @@ export class MongoAggregateRepo<A, AM extends DocumentWithId> implements IRepo<A
     }
 
     async init() {
-        await this.collection.createIndex({ id: 1 }, { unique: true });
+        await this.collection.createIndex({ id: 1 }, { unique: true }).catch((e: any) => {
+            this.logger.warn('Skipping index creation', e);
+        });
     }
 
     async save(aggregate: WithOptionalVersion<A>) {

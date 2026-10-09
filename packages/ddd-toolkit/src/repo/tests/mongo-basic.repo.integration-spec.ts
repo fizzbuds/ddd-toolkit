@@ -5,6 +5,7 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 interface TestModel {
     id: string;
     data: string;
+    deleted?: boolean;
 }
 
 class TestRepository extends MongoBasicRepo<TestModel> {}
@@ -70,6 +71,41 @@ describe('MongoBasicRepo MongoDB Integration', () => {
                     await expect(() => basicRepo.getByIdOrThrow('not-existing-id')).rejects.toThrow();
                 });
             });
+        });
+    });
+
+    describe('Soft Delete', () => {
+        const id = 'soft-deleted-id';
+
+        beforeEach(async () => {
+            await basicRepo.save({ id, data: 'value' });
+        });
+
+        it('should hide a soft-deleted document', async () => {
+            await basicRepo.softDelete(id);
+
+            expect(await basicRepo.getById(id)).toBeNull();
+        });
+
+        it('should return a soft-deleted document when explicitly included', async () => {
+            await basicRepo.softDelete(id);
+
+            expect(await basicRepo.getById(id, { includeDeleted: true })).toMatchObject({
+                id,
+                deleted: true,
+                deletedAt: expect.any(Date),
+            });
+        });
+
+        it('should keep the original deletedAt when saving a soft-deleted document again', async () => {
+            await basicRepo.softDelete(id);
+            const deletedDocument = await basicRepo.getById(id, { includeDeleted: true });
+            if (!deletedDocument) throw new Error('Not found');
+
+            await basicRepo.save(deletedDocument);
+
+            const savedDocument = await basicRepo.getById(id, { includeDeleted: true });
+            expect(savedDocument?.deletedAt).toEqual(deletedDocument.deletedAt);
         });
     });
 

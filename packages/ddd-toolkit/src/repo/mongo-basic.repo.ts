@@ -6,6 +6,8 @@ export type MongoDocument<T> = T & {
     _id: ObjectId;
     createdAt: Date;
     updatedAt: Date;
+    deleted?: boolean;
+    deletedAt?: Date;
 };
 
 export abstract class MongoBasicRepo<M extends DocumentWithId> {
@@ -52,10 +54,12 @@ export abstract class MongoBasicRepo<M extends DocumentWithId> {
                     ...(model as M),
                     __version: modelVersion + 1,
                     createdAt: undefined,
+                    deletedAt: undefined,
                     updatedAt: new Date(),
                 },
                 $setOnInsert: { createdAt: new Date() } as any,
-            },
+                ...(model.deleted ? { $min: { deletedAt: new Date() } } : { $unset: { deletedAt: '' } }),
+            } as any,
             { upsert: true, session, ignoreUndefined: true },
         );
         this.logger.debug(
@@ -79,16 +83,25 @@ export abstract class MongoBasicRepo<M extends DocumentWithId> {
         }
     }
 
-    public async getById(id: string): Promise<MongoDocument<WithVersion<M>> | null> {
-        const document = await this.collection.findOne<MongoDocument<WithVersion<M>>>({ id: id } as any);
+    public async softDelete(id: string) {
+        const document = await this.getByIdOrThrow(id, { includeDeleted: true });
+        await this.save({ ...document, deleted: true });
+    }
+
+    public async getById(
+        id: string,
+        options?: { includeDeleted?: boolean },
+    ): Promise<MongoDocument<WithVersion<M>> | null> {
+        const filter = options?.includeDeleted ? { id } : { id, deleted: { $ne: true } };
+        const document = await this.collection.findOne<MongoDocument<WithVersion<M>>>(filter as any);
         this.logger.debug(`Retrieving document with id ${id}. Found: ${JSON.stringify(document)}`);
         if (!document) return null;
 
         return document;
     }
 
-    public async getByIdOrThrow(id: string): Promise<WithVersion<M>> {
-        const document = await this.getById(id);
+    public async getByIdOrThrow(id: string, options?: { includeDeleted?: boolean }): Promise<WithVersion<M>> {
+        const document = await this.getById(id, options);
         if (!document) throw new Error(`Document ${id} not found.`);
         return document;
     }

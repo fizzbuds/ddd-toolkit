@@ -1,5 +1,11 @@
 # @fizzbuds/ddd-toolkit
 
+## 0.5.0
+
+### Minor Changes
+
+-   5b26b5c: Basic repo support for soft delete
+
 ## 0.4.1
 
 ### Patch Changes
